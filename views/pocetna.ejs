@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filmovi Popis</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+    <header>
+        <h1>Filmska baza</h1>
+        <nav>
+            <ul>
+                <li><a href="/pretrazi?category=movie">Filmovi</a></li>
+                <li><a href="/pretrazi?category=tv">Serije</a></li>
+                <li><a href="/pretrazi?category=person">Glumci</a></li>
+                <li><a href="#">Više</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="search-section">
+        <form action="/pretrazi" method="post">
+            <input type="text" id="naziv" name="naziv" placeholder="Pretraži filmove, serije, ljude..." required>
+            <button type="submit">Pretraži</button>
+            <div class="filter-options">
+                <label for="category">Kategorija:</label>
+                <select id="category" name="category">
+                    <option value="movie">Filmovi</option>
+                    <option value="tv">Serije</option>
+                    <option value="person">Glumci</option>
+                </select>
+            </div>
+        </form>
+    </section>
+</body>
+</html>

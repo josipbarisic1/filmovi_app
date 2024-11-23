@@ -1,0 +1,56 @@
+/* Stilovi specifični za početnu stranicu (index.php) */
+
+/* Osnovni stilovi za pretragu */
+.search-section {
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 20px auto;
+    max-width: 800px;
+    border-radius: 8px;
+}
+
+.search-section form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-section input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.search-section button {
+    padding: 10px 20px;
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.search-section button:hover {
+    background-color: #0056b3;
+}
+
+.filter-options {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.filter-options label {
+    font-weight: bold;
+}
+
+.filter-options select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}

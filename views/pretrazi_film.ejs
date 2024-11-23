@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rezultati pretraživanja</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/pretrazi_film.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <h1><a href="/" class="logo">Filmska baza</a></h1>
+            <ul>
+                <li><a href="/pretrazi?category=movie">Filmovi</a></li>
+                <li><a href="/pretrazi?category=tv">Serije</a></li>
+                <li><a href="/pretrazi?category=person">Glumci</a></li>
+                <li><a href="#">Više</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="search-section">
+        <form action="/pretrazi" method="post">
+            <input type="text" id="naziv" name="naziv" value="<%= naziv %>" required placeholder="Pretraži filmove, serije, glumce...">
+            <button type="submit">Pretraži</button>
+        </form>
+    </section>
+
+    <section class="filter-section">
+        <ul>
+            <li>Filtriraj pretragu:</li>
+            <li><a href="/pretrazi?category=movie&naziv=<%= naziv %>">Filmovi</a></li>
+            <li><a href="/pretrazi?category=tv&naziv=<%= naziv %>">Serije</a></li>
+            <li><a href="/pretrazi?category=person&naziv=<%= naziv %>">Ljudi</a></li>
+        </ul>
+    </section>
+
+    <% if (data && data.results.length > 0) { %>
+        <div class="movie-grid">
+            <% data.results.forEach(item => { %>
+                <div class="movie-card">
+                    <div class="movie-title-mobile"><%= item.title || item.name %></div>
+                    <div class="poster-wrapper">
+                        <img src="<%= item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : (item.profile_path ? `https://image.tmdb.org/t/p/w200${item.profile_path}` : '/images/placeholder.jpg') %>" alt="Poster za <%= item.title || item.name %>">
+                    </div>
+                    <div class="movie-details">
+                        <h2><%= item.title || item.name %></h2>
+                        <p><%= item.overview %></p>
+                        <% if (category === 'movie') { %>
+                            <a href="/dodaj/<%= item.id %>" class="add-movie-btn">Dodaj film</a>
+                        <% } %>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    
+        <!-- Paginacija -->
+        <div class="pagination">
+            <% if (data.page > 1) { %>
+                <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&page=<%= data.page - 1 %>">Prethodna</a>
+            <% } %>
+            <% if (data.page < data.total_pages) { %>
+                <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&page=<%= data.page + 1 %>">Sljedeća</a>
+            <% } %>
+        </div>
+    <% } else { %>
+        <p>Nema rezultata za pretraživanje.</p>
+    <% } %>
+    
+
+</body>
+</html>
