@@ -24,18 +24,45 @@ app.get('/pretrazi', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const naziv = req.query.naziv || '';
     const category = req.query.category || 'movie';
-    const page = req.query.page || 1;
+    const page = parseInt(req.query.page) || 1;
 
     const url = `https://api.themoviedb.org/3/search/${category}?api_key=${apiKey}&query=${naziv}&page=${page}`;
     try {
         const response = await axios.get(url);
         const data = response.data;
-        res.render('pretrazi_film', { data, naziv, category, page: parseInt(page) });
+
+        const totalPages = data.total_pages;
+
+        // Kreiraj paginaciju
+        const pagination = generatePagination(page, totalPages);
+
+        // Dodaj 'pagination' u render podatke zajedno s ostalim informacijama
+        res.render('pretrazi_film', { data, naziv, category, pagination, page, totalPages });
     } catch (error) {
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
     }
 });
 
+// Funkcija za generiranje paginacije
+function generatePagination(currentPage, totalPages) {
+    let pagination = [];
+
+    if (totalPages <= 5) {
+        for (let i = 1; i <= totalPages; i++) {
+            pagination.push(i);
+        }
+    } else {
+        if (currentPage <= 3) {
+            pagination = [1, 2, 3, 4, 5, '...', totalPages];
+        } else if (currentPage >= totalPages - 2) {
+            pagination = [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+        } else {
+            pagination = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+        }
+    }
+
+    return pagination;
+}
 
 // POST Ruta za Pretraga filmova/serija/ljudi
 app.post('/pretrazi', async (req, res) => {
@@ -48,11 +75,16 @@ app.post('/pretrazi', async (req, res) => {
     try {
         const response = await axios.get(url);
         const data = response.data;
-        res.render('pretrazi_film', { data, naziv, category });
+
+        const totalPages = data.total_pages;
+        const pagination = generatePagination(page, totalPages);
+
+        res.render('pretrazi_film', { data, naziv, category, pagination, page, totalPages });
     } catch (error) {
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
     }
 });
+
 
 // Dodavanje filma (spremanje u bazu)
 app.get('/dodaj/:id', async (req, res) => {
