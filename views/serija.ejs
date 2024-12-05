@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= serija.name %> - Detalji</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/serija.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <h1><a href="/" class="logo">Filmska baza</a></h1>
+        </nav>
+    </header>
+    <div class="serija-details">
+        <h1><%= serija.name %> (<%= serija.first_air_date.substr(0, 4) %>)</h1>
+        <img src="https://image.tmdb.org/t/p/w300<%= serija.poster_path %>" alt="Poster za <%= serija.name %>">
+        <p><strong>Ocjena:</strong> <%= serija.vote_average %> / 10</p>
+        <p><strong>Prva epizoda:</strong> <%= serija.first_air_date %></p>
+        <p><strong>Opis:</strong> <%= serija.overview %></p>
+    </div>
+</body>
+</html>

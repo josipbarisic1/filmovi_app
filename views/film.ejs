@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= film.title %> - Detalji</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/film.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- Font Awesome za ikone -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap"> <!-- Google Font za moderan izgled -->
+</head>
+<body>
+    <header>
+        <nav>
+            <h1><a href="/" class="logo">Filmska baza</a></h1>
+            <ul>
+                <li><a href="/pretrazi?category=movie">Filmovi</a></li>
+                <li><a href="/pretrazi?category=tv">Serije</a></li>
+                <li><a href="/pretrazi?category=person">Glumci</a></li>
+                <li><a href="#">Više</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="film-section">
+        <div class="film-header" style="background-image: url('https://image.tmdb.org/t/p/original<%= film.backdrop_path || film.poster_path %>');">
+            <div class="overlay"></div> <!-- Dodajemo overlay koji će dodatno zatamniti pozadinu -->
+            <div class="film-content-container">
+                <div class="poster-container">
+                    <img src="https://image.tmdb.org/t/p/w300<%= film.poster_path %>" alt="<%= film.title %> Poster" class="film-poster">
+                </div>
+                <div class="film-info">
+                    <h1><%= film.title %> <span class="release-year">(<%= film.release_date ? film.release_date.substr(0, 4) : 'N/A' %>)</span></h1>
+                    <h3>Opis</h3>
+                    <p><%= film.overview %></p>
+                    <p><strong>Trajanje:</strong> <%= film.runtime %> min</p>
+                    <p><strong>Žanr:</strong> <%= film.genres.map(genre => genre.name).join(', ') %></p>
+                    <div class="film-actions">
+                        <button id="favorite-btn" class="action-btn favorite" title="Dodaj u favorite">
+                            <i class="far fa-heart"></i>
+                        </button>
+                        <button class="action-btn add-to-list" title="Dodaj na listu">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <% if (film.videos && film.videos.results.length > 0) { %>
+                            <button class="action-btn play-trailer" onclick="playTrailer()" title="Pogledaj trailer">
+                                <i class="fas fa-play"></i> Play Trailer
+                            </button>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="film-cast">
+        <h2>Glumci</h2>
+        <div class="cast-grid">
+            <% film.credits.cast.slice(0, 10).forEach(actor => { %>
+                <div class="cast-card">
+                    <img src="<%= actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholder.jpg' %>" alt="<%= actor.name %>">
+                    <p><strong><%= actor.name %></strong> as <%= actor.character %></p>
+                </div>
+            <% }) %>
+            <a href="#">Svi glumci i ekipa filma</a>
+        </div>
+    </section>
+
+    <section class="comments-section">
+        <h2>Komentari</h2>
+        <div class="comment">
+            <p><strong>Korisnik:</strong> Ovo je odličan film!</p>
+        </div>
+        <!-- Omogućite dodavanje novih komentara kad se implementira autentifikacija -->
+    </section>
+
+    <script>
+        function playTrailer() {
+            const trailer = '<%= film.videos.results.find(video => video.type === "Trailer")?.key %>';
+            if (trailer) {
+                window.open(`https://www.youtube.com/watch?v=${trailer}`, '_blank');
+            }
+        }
+
+        document.getElementById('favorite-btn').addEventListener('click', function() {
+            const icon = this.querySelector('i');
+            if (icon.classList.contains('far')) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                icon.style.color = 'red';
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                icon.style.color = 'white';
+            }
+        });
+    </script>
+</body>
+</html>

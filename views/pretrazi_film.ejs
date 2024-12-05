@@ -39,28 +39,31 @@
     <% if (data && data.results.length > 0) { %>
         <div class="movie-grid">
             <% data.results.forEach(item => { %>
-                <div class="movie-card">
-                    <div class="movie-title-mobile">
-                        <%= item.title || item.name %>
-                        <% if (item.release_date || item.first_air_date) { %> 
-                            (<%= (item.release_date || item.first_air_date).substr(0, 4) %>)
-                        <% } %>
-                    </div>
-                    <div class="poster-wrapper">
-                        <img src="<%= item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : (item.profile_path ? `https://image.tmdb.org/t/p/w200${item.profile_path}` : '/images/placeholder.jpg') %>" alt="Poster za <%= item.title || item.name %>">
-                    </div>
-                    <div class="movie-details">
-                        <h2 class="movie-title-full">
+                <a href="<%= category === 'movie' ? `/film/${item.id}` : category === 'tv' ? `/serija/${item.id}` : `/osoba/${item.id}` %>" class="movie-card-link">
+                    <div class="movie-card">
+                        <div class="movie-title-mobile">
                             <%= item.title || item.name %>
-                            <% if (item.release_date || item.first_air_date) { %>
+                            <% if (item.release_date || item.first_air_date) { %> 
                                 (<%= (item.release_date || item.first_air_date).substr(0, 4) %>)
                             <% } %>
-                        </h2>
-                        <p><%= item.overview %></p>
+                        </div>
+                        <div class="poster-wrapper">
+                            <img src="<%= item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : (item.profile_path ? `https://image.tmdb.org/t/p/w200${item.profile_path}` : '/images/placeholder.jpg') %>" alt="Poster za <%= item.title || item.name %>">
+                        </div>
+                        <div class="movie-details">
+                            <h2 class="movie-title-full">
+                                <%= item.title || item.name %>
+                                <% if (item.release_date || item.first_air_date) { %>
+                                    (<%= (item.release_date || item.first_air_date).substr(0, 4) %>)
+                                <% } %>
+                            </h2>
+                            <p><%= item.overview %></p>
+                        </div>             
                     </div>
-                </div>
+                </a>
             <% }) %>
         </div>
+        
 
         <!-- Paginacija -->
         <div class="pagination">

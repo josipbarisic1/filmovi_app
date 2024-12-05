@@ -155,6 +155,56 @@ app.get('/popis', (req, res) => {
     connection.end();
 });
 
+// Dodavanje rute za prikaz filma
+app.get('/film/:id', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const filmId = req.params.id;
+
+    const url = `https://api.themoviedb.org/3/movie/${filmId}?api_key=${apiKey}&append_to_response=credits,videos`;
+    try {
+        const response = await axios.get(url);
+        const film = response.data;
+
+        res.render('film', { film });
+    } catch (error) {
+        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka o filmu.');
+    }
+});
+
+// Dodavanje rute za prikaz serije
+app.get('/serija/:id', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const serijaId = req.params.id;
+
+    const url = `https://api.themoviedb.org/3/tv/${serijaId}?api_key=${apiKey}&append_to_response=credits,seasons`;
+    try {
+        const response = await axios.get(url);
+        const serija = response.data;
+
+        res.render('serija', { serija });
+    } catch (error) {
+        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka o seriji.');
+    }
+});
+
+// Dodavanje rute za prikaz osobe
+app.get('/osoba/:id', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const osobaId = req.params.id;
+
+    const url = `https://api.themoviedb.org/3/person/${osobaId}?api_key=${apiKey}&append_to_response=movie_credits,tv_credits`;
+    try {
+        const response = await axios.get(url);
+        const osoba = response.data;
+
+        res.render('osoba', { osoba });
+    } catch (error) {
+        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka o osobi.');
+    }
+});
+
+
+
 // Pokreni server
 app.listen(port, () => {
     console.log(`Server pokrenut na http://localhost:${port}`);
