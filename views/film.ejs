@@ -12,16 +12,17 @@
 <body>
     <header>
         <nav>
-            <h1><a href="/" class="logo">Filmska baza</a></h1>
+            <h1><a href="/" class="logo">Moviebase</a></h1>
             <ul>
-                <li><a href="/pretrazi?category=movie">Filmovi</a></li>
-                <li><a href="/pretrazi?category=tv">Serije</a></li>
-                <li><a href="/pretrazi?category=person">Glumci</a></li>
-                <li><a href="#">Više</a></li>
+                <li><a href="/pretrazi?category=movie">Movies</a></li>
+                <li><a href="/pretrazi?category=tv">Shows</a></li>
+                <li><a href="/pretrazi?category=person">People</a></li>
+                <li><a href="#">More</a></li>
             </ul>
         </nav>
     </header>
 
+    
     <section class="film-section">
         <div class="film-header" style="background-image: url('https://image.tmdb.org/t/p/original<%= film.backdrop_path || film.poster_path %>');">
             <div class="overlay"></div> <!-- Dodajemo overlay koji će dodatno zatamniti pozadinu -->
@@ -53,33 +54,94 @@
         </div>
     </section>
 
-    <section class="film-cast">
-        <h2>Glumci</h2>
-        <div class="cast-grid">
-            <% film.credits.cast.slice(0, 10).forEach(actor => { %>
-                <div class="cast-card">
-                    <img src="<%= actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholder.jpg' %>" alt="<%= actor.name %>">
-                    <p><strong><%= actor.name %></strong> as <%= actor.character %></p>
-                </div>
-            <% }) %>
-            <a href="#">Svi glumci i ekipa filma</a>
+    <div id="trailer-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeTrailer()">&times;</span>
+            <iframe id="trailer-video" width="100%" height="400px" frameborder="0" allowfullscreen></iframe>
         </div>
-    </section>
+    </div>
 
-    <section class="comments-section">
-        <h2>Komentari</h2>
-        <div class="comment">
-            <p><strong>Korisnik:</strong> Ovo je odličan film!</p>
+    <div class="main-content-wrapper">
+        <div class="cast-wrapper">
+            <div class="content-wrapper">
+                <!-- Glumci -->
+                <section class="film-cast">
+                    <h2>Top Bill Cast</h2>
+                    <div class="cast-scroll-wrapper">
+                        <div class="cast-horizontal-scroll">
+                            <% film.credits.cast.slice(0, 10).forEach(actor => { %>
+                                <div class="cast-card">
+                                    <div class="cast-frame">
+                                        <a href="/osoba/<%= actor.id %>">
+                                            <img src="<%= actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholder.jpg' %>" alt="<%= actor.name %>">
+                                        </a>
+                                        <div class="cast-info">
+                                            <p class="cast-name"><strong><%= actor.name %></strong></p>
+                                            <p class="cast-character"><%= actor.character %></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
+                    </div>
+                </section>
+                <a href="/film/<%= film.id %>/glumci" class="capitalLink">Full Cast & Crew</a>
+                <div class="hrLine">
+                    <hr>
+                </div>
+                <!-- Recenzije -->
+                <section class="comments-section">
+                    <h2>Reviews</h2>
+                    <% if (komentar) { %>
+                        <div class="comment">
+                            <p><strong>Korisnik:</strong> <%= komentar %></p>
+                        </div>
+                    <% } else { %>
+                        <p>Još nema recenzija za ovaj film.</p>
+                    <% } %>
+                </section>
+            </div>
         </div>
-        <!-- Omogućite dodavanje novih komentara kad se implementira autentifikacija -->
-    </section>
+
+        <div class="divider"></div>
+    
+        <!-- Preporuke -->
+        <div class="recommend-wrapper">
+            <div class="recommend">
+                <h2>Recommendations</h2>
+                <div class="recommend-grid">
+                    <% preporuke.forEach(preporuka => { %>
+                        <div class="recommend-card" 
+                             data-image="<%= preporuka.backdrop_path ? 'https://image.tmdb.org/t/p/w780' + preporuka.backdrop_path : '/images/placeholder.jpg' %>">
+                            <div class="poster"></div>
+                            <p><%= preporuka.title %></p>
+                            <div class="hrLineRecommend"><hr></div>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+    </div>
+      
+      
+    
 
     <script>
         function playTrailer() {
-            const trailer = '<%= film.videos.results.find(video => video.type === "Trailer")?.key %>';
-            if (trailer) {
-                window.open(`https://www.youtube.com/watch?v=${trailer}`, '_blank');
+            const trailerKey = '<%= film.videos.results.find(video => video.type === "Trailer")?.key %>';
+            if (trailerKey) {
+                const modal = document.getElementById('trailer-modal');
+                const iframe = document.getElementById('trailer-video');
+                iframe.src = `https://www.youtube.com/embed/${trailerKey}`;
+                modal.style.display = 'flex';
             }
+        }
+
+        function closeTrailer() {
+            const modal = document.getElementById('trailer-modal');
+            const iframe = document.getElementById('trailer-video');
+            iframe.src = '';
+            modal.style.display = 'none';
         }
 
         document.getElementById('favorite-btn').addEventListener('click', function() {
@@ -93,6 +155,14 @@
                 icon.classList.add('far');
                 icon.style.color = 'white';
             }
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const recommendCards = document.querySelectorAll(".recommend-card");
+            recommendCards.forEach(card => {
+                const imageUrl = card.getAttribute("data-image");
+                card.querySelector(".poster").style.backgroundImage = `url('${imageUrl}')`;
+            });
         });
     </script>
 </body>

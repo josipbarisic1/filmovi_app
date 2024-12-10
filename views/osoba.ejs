@@ -15,7 +15,7 @@
     </header>
     <div class="osoba-details">
         <h1><%= osoba.name %></h1>
-        <img src="https://image.tmdb.org/t/p/w300<%= osoba.profile_path %>" alt="Slika za <%= osoba.name %>">
+        <img src="<%= osoba.profile_path ? `https://image.tmdb.org/t/p/w300${osoba.profile_path}` : '/images/placeholderPerson.jpg' %>" alt="Slika za <%= osoba.name %>">
         <p><strong>Biografija:</strong> <%= osoba.biography %></p>
         <p><strong>Datum rođenja:</strong> <%= osoba.birthday %></p>
         <% if (osoba.deathday) { %>

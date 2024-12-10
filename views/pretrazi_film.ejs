@@ -48,7 +48,14 @@
                             <% } %>
                         </div>
                         <div class="poster-wrapper">
-                            <img src="<%= item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : (item.profile_path ? `https://image.tmdb.org/t/p/w200${item.profile_path}` : '/images/placeholder.jpg') %>" alt="Poster za <%= item.title || item.name %>">
+                            <img src="<% 
+                                if (category === 'person') { 
+                                    %><%= item.profile_path ? `https://image.tmdb.org/t/p/w200${item.profile_path}` : '/images/placeholderPerson.jpg' %><%
+                                } else { 
+                                    %><%= item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : '/images/placeholder.jpg' %><%
+                                } 
+                            %>" alt="Poster za <%= item.title || item.name %>">
+
                         </div>
                         <div class="movie-details">
                             <h2 class="movie-title-full">

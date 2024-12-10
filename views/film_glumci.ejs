@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glumci i ekipa filma</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/film_glumci.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <h1><a href="/" class="logo">Filmska baza</a></h1>
+            <ul>
+                <li><a href="/pretrazi?category=movie">Filmovi</a></li>
+                <li><a href="/pretrazi?category=tv">Serije</a></li>
+                <li><a href="/pretrazi?category=person">Glumci</a></li>
+                <li><a href="#">Više</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="film-cast">
+        <h2>Glumci</h2>
+        <div class="cast-grid">
+            <% cast.forEach(actor => { %>
+                <div class="cast-card">
+                    <a href="/osoba/<%= actor.id %>">
+                        <img src="<%= actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholderPerson.jpg' %>" alt="<%= actor.name %>">
+                    </a>
+                    <p><strong><%= actor.name %></strong> as <%= actor.character %></p>
+                </div>
+            <% }) %>
+        </div>
+    </section>
+    
+    <section class="film-crew">
+        <h2>Ekipa</h2>
+        <% Object.keys(crewByDepartment).forEach(department => { %>
+            <h3><%= department %></h3>
+            <div class="crew-grid">
+                <% crewByDepartment[department].forEach(member => { %>
+                    <div class="crew-card">
+                        <a href="/osoba/<%= member.id %>">
+                            <img src="<%= member.profile_path ? `https://image.tmdb.org/t/p/w200${member.profile_path}` : '/images/placeholderPerson.jpg' %>" alt="<%= member.name %>">
+                        </a>
+                        <p><strong><%= member.name %></strong> - <%= member.job %></p>
+                    </div>
+                <% }) %>
+            </div>
+        <% }) %>
+    </section>    
+    
+</body>
+</html>

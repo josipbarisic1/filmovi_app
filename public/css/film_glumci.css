@@ -1,0 +1,23 @@
+.cast-grid, .crew-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 110px)); /* Još manji posteri */
+    gap: 15px;
+    padding: 20px;
+}
+
+.cast-card img, .crew-card img {
+    border-radius: 8px;
+    width: 100%;
+    height: 130px; /* Smanjena visina */
+    object-fit: cover;
+}
+
+.cast-card p, .crew-card p {
+    text-align: center;
+    font-size: 0.75rem; /* Manji font za opis ispod postera */
+}
+
+.crew-card img {
+    border: 1px solid #ddd;
+    background-color: #f4f4f4;
+}

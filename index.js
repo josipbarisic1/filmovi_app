@@ -155,21 +155,84 @@ app.get('/popis', (req, res) => {
     connection.end();
 });
 
-// Dodavanje rute za prikaz filma
+// Dodavanje rute za prikaz filma s recenzijom i preporukama
 app.get('/film/:id', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const filmId = req.params.id;
 
-    const url = `https://api.themoviedb.org/3/movie/${filmId}?api_key=${apiKey}&append_to_response=credits,videos`;
-    try {
-        const response = await axios.get(url);
-        const film = response.data;
+    const filmUrl = `https://api.themoviedb.org/3/movie/${filmId}?api_key=${apiKey}&append_to_response=credits,videos`;
+    const recommendationsUrl = `https://api.themoviedb.org/3/movie/${filmId}/recommendations?api_key=${apiKey}`;
 
-        res.render('film', { film });
+    const mysql = require('mysql');
+
+    try {
+        // Istovremeno dohvaćanje podataka o filmu i preporuka
+        const [filmResponse, recommendationsResponse] = await Promise.all([
+            axios.get(filmUrl),
+            axios.get(recommendationsUrl)
+        ]);
+
+        const film = filmResponse.data;
+        const preporuke = recommendationsResponse.data.results.slice(0, 5);
+
+        // Dohvati komentar (recenziju) iz baze koristeći naziv filma
+        const connection = mysql.createConnection({
+            host: process.env.DB_HOST,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
+        });
+
+        connection.connect();
+
+        const query = 'SELECT komentar FROM filmovi WHERE naziv = ?';
+        connection.query(query, [film.title], (error, results) => {
+            if (error) {
+                console.error('Greška prilikom dohvaćanja komentara:', error);
+                res.status(500).send('Greška prilikom dohvaćanja komentara.');
+            } else {
+                const komentar = results.length > 0 ? results[0].komentar : null;
+
+                // Renderiraj stranicu s podacima o filmu, komentarom i preporukama
+                res.render('film', { film, komentar, preporuke });
+            }
+        });
+
+        connection.end();
     } catch (error) {
+        console.error('Došlo je do pogreške prilikom dohvaćanja podataka o filmu:', error);
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka o filmu.');
     }
 });
+
+
+// Ruta za prikaz svih glumaca i ekipe filma
+app.get('/film/:id/glumci', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const filmId = req.params.id;
+
+    const url = `https://api.themoviedb.org/3/movie/${filmId}/credits?api_key=${apiKey}`;
+    try {
+        const response = await axios.get(url);
+        const credits = response.data;
+
+        // Razvrstavanje ekipe prema kategorijama
+        const crewByDepartment = credits.crew.reduce((acc, crewMember) => {
+            if (!acc[crewMember.department]) {
+                acc[crewMember.department] = [];
+            }
+            acc[crewMember.department].push(crewMember);
+            return acc;
+        }, {});
+
+        res.render('film_glumci', { cast: credits.cast, crewByDepartment });
+    } catch (error) {
+        console.error('Greška prilikom dohvaćanja glumaca i ekipe filma:', error);
+        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja glumaca i ekipe filma.');
+    }
+});
+
+
 
 // Dodavanje rute za prikaz serije
 app.get('/serija/:id', async (req, res) => {
@@ -202,6 +265,8 @@ app.get('/osoba/:id', async (req, res) => {
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka o osobi.');
     }
 });
+
+
 
 
 
