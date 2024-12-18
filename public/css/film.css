@@ -11,7 +11,7 @@ body {
     position: relative;
     background-size: cover;
     background-position: center;
-    padding: 70px 10px;
+    padding: 10px;
     color: #fff;
     margin-top: 40px;
 }
@@ -23,6 +23,10 @@ body {
     right: 0;
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.7); /* Povećan intenzitet zatamnjenja kako bi tekst bio lakše čitljiv */
+}
+
+.film-content-wrapper{
+    padding: 30px 40px 30px 40px;
 }
 
 .film-content-container {
@@ -48,12 +52,13 @@ body {
 
 .film-info {
     flex: 1;
-    padding: 20px;
+    padding-left: 30px;
     color: #fff; /* Bijeli tekst za bolju vidljivost na tamnoj pozadini */
 }
 
 .film-info h1 {
     margin-top: 0;
+    margin-bottom: 0;
     font-size: 2rem; /* Povećana veličina fonta naslova, manja od prethodne */
     line-height: 1.3; /* Manji razmak između redaka za naslov */
 }
@@ -63,22 +68,119 @@ body {
 }
 
 .film-info h3 {
-    margin-bottom: 10px;
+    margin-bottom: 0px;
+    margin-top: 0px;
     font-size: 1.2rem; /* Malo veći font za podnaslove */
+    font-weight: 650;
 }
 
 .film-info p {
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 0px;
+    margin-bottom: 0px;
     font-size: 1rem; /* Malo veći font za informacije */
     letter-spacing: 0.5px; /* Odvajanje slova za bolju čitljivost */
 }
 
+.overview-wrapper{
+    padding-top: 30px;
+}
+
+.director{
+    padding-top: 25px;
+}
+
+.score-wrapper{
+    display: flex;
+    padding-top: 10px;
+}
+
+.score-container{
+    display: flex;
+    padding-right: 40px;
+}
+
+.score-box {
+    width: 60px; /* Promjer kruga */
+    height: 60px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50%; /* Čini ga krugom */
+    background-color: rgba(var(--score-color), 0.65); /* Dinamična boja s prozirnošću */
+    display: flex;
+    align-items: center; /* Vertikalno centriranje */
+    justify-content: center; /* Horizontalno centriranje */
+    font-size: 1.2rem; /* Veličina teksta za ocjenu */
+    font-weight: bold;
+    color: #fff; /* Bijela boja za tekst */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Dodana sjena */
+    margin: 10px 0; /* Razmak iznad i ispod */
+    text-align: center;
+    transition: background-color 0.3s ease, transform 0.3s ease; /* Suptilna tranzicija */
+}
+
+.score-box:hover {
+    transform: scale(1.1); /* Lagano povećanje na hover */
+    background-color: rgba(var(--score-color), 1); /* Osvijetli boju pri hoveru */
+}
+
+.score-box span {
+    font-family: Arial, sans-serif; /* Zamijeni font za precizniji izgled */
+    -webkit-text-stroke: 0.5px black; /* Kontura za bolju vidljivost */
+}
+
+
+.score-container p{
+    max-width: 50px;
+}
+
+
 .film-actions {
     display: flex;
     gap: 15px;
-    margin-top: 30px; /* Povećan razmak između informacija i gumba */
+    padding-top: 30px; /* Povećan razmak između informacija i gumba */
 }
+
+.details-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #444;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 14px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.details-btn i {
+    margin-right: 5px; /* Odmak između ikone i teksta */
+}
+
+.details-btn:hover {
+    background-color: #555;
+}
+
+
+.misc-wrapper{
+    display: flex;
+    flex-wrap:wrap;
+    padding-top: 20px;
+}
+
+.misc-wrapper span:not(:first-child){
+    padding-left: 30px;
+}
+
+.misc-wrapper span:not(:first-child)::before {
+    content: "•";
+    margin-right: 25px; /* Razmak između točkice i teksta */
+    color: white;
+}
+
+
+
 
 .content-wrapper {
     padding-left: 30px;
@@ -110,7 +212,7 @@ body {
     background: transparent;
     border: none;
     color: white;
-    font-size: 1.1rem; /* Smanjena veličina fonta za gumbe */
+    font-size: 1.5rem; /* Smanjena veličina fonta za gumbe */
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -118,16 +220,20 @@ body {
     transition: color 0.3s;
 }
 
+.play-trailer{
+    margin: 0 auto;
+}
+
+.play-trailer i {
+    font-size: 1rem; /* Lagano smanjeno za suptilniji izgled */
+}
+
 .action-btn:hover {
     color: #0056b3;
 }
 
 .favorite i, .add-to-list i {
-    font-size: 1.4rem; /* Lagano smanjeno za suptilniji izgled */
-}
-
-.play-trailer i {
-    font-size: 1rem; /* Lagano smanjeno za suptilniji izgled */
+    font-size: 1.75rem; /* Lagano smanjeno za suptilniji izgled */
 }
 
 .cast-scroll-wrapper {
@@ -232,7 +338,7 @@ body {
     background-color: transparent;
     overflow: hidden;
     transition: transform 0.3s;
-    cursor: pointer;
+    text-decoration: none;
 }
 
 .recommend-card .poster {
@@ -240,8 +346,9 @@ body {
     aspect-ratio: 16 / 9; /* Landscape format */
     background-size: cover;
     background-position: center;
-    border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border-top-right-radius: 5px;
+    border-top-left-radius: 5px;
 }
 
 
@@ -254,22 +361,49 @@ body {
 }
 
 .recommend-card p {
-    margin-top: 8px;
-    margin-bottom: 0px;
     font-size: 0.9rem;
-    color: #333;
-    text-align: center;
+    color: white;
+    text-align: left;
+    margin: 0 auto;
+    padding: 5px 5px 5px 10px;
 }
 
-.hrLineRecommend hr {
+.recommend-card a {
     width: 100%;
-    color: grey;
+    cursor: pointer;
 }
 
-.hrLineRecommend {
+.recommend-naslov{
+    background-color: #454545;
     width: 100%;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-top: 1px solid white;
 }
 
+.recommend-card .rating {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9rem;
+    color: gold; /* Boja zvjezdica */
+    padding: 5px 10px;
+    text-align: left;
+}
+
+.recommend-card .rating .star {
+    color: gold; /* Boja zvjezdica */
+    font-size: 1rem; /* Veličina zvjezdica */
+}
+
+.recommend-card .rating .score {
+    color: #000000;
+    border: 2px solid gold;
+    padding: 5px 12px;
+    border-radius: 25px;
+    font-size: large;
+    letter-spacing: 1px;
+}
 
 .modal {
     display: none;
@@ -286,8 +420,8 @@ body {
 }
 
 .modal-content {
-    background-color: #fff;
-    padding: 20px;
+    background-color: black;
+    padding: 5px 5px 0 5px;
     border-radius: 10px;
     max-width: 800px;
     margin: auto;
@@ -317,5 +451,12 @@ body {
     bottom: 0; /* Istezanje linije do donjeg dijela roditelja */
     width: 1px;
     background-color: #9b9b9b; /* Boja linije */
+}
+
+@media screen and (max-width: 768px) {
+    #trailer-video {
+        width: 100%; /* Podesi širinu na 100% dostupnog prostora */
+        height: auto; /* Automatski prilagodi visinu */
+    }
 }
 

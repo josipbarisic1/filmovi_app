@@ -22,32 +22,70 @@
         </nav>
     </header>
 
-    
     <section class="film-section">
         <div class="film-header" style="background-image: url('https://image.tmdb.org/t/p/original<%= film.backdrop_path || film.poster_path %>');">
             <div class="overlay"></div> <!-- Dodajemo overlay koji će dodatno zatamniti pozadinu -->
-            <div class="film-content-container">
-                <div class="poster-container">
-                    <img src="https://image.tmdb.org/t/p/w300<%= film.poster_path %>" alt="<%= film.title %> Poster" class="film-poster">
-                </div>
-                <div class="film-info">
-                    <h1><%= film.title %> <span class="release-year">(<%= film.release_date ? film.release_date.substr(0, 4) : 'N/A' %>)</span></h1>
-                    <h3>Opis</h3>
-                    <p><%= film.overview %></p>
-                    <p><strong>Trajanje:</strong> <%= film.runtime %> min</p>
-                    <p><strong>Žanr:</strong> <%= film.genres.map(genre => genre.name).join(', ') %></p>
-                    <div class="film-actions">
-                        <button id="favorite-btn" class="action-btn favorite" title="Dodaj u favorite">
-                            <i class="far fa-heart"></i>
-                        </button>
-                        <button class="action-btn add-to-list" title="Dodaj na listu">
-                            <i class="fas fa-plus"></i>
-                        </button>
+            <div class="film-content-wrapper">
+                <div class="film-content-container">
+                    <div class="poster-container">
+                        <img src="https://image.tmdb.org/t/p/w300<%= film.poster_path %>" alt="<%= film.title %> Poster" class="film-poster">
                         <% if (film.videos && film.videos.results.length > 0) { %>
                             <button class="action-btn play-trailer" onclick="playTrailer()" title="Pogledaj trailer">
                                 <i class="fas fa-play"></i> Play Trailer
                             </button>
                         <% } %>
+                    </div>
+                    <div class="film-info-wrapper">
+                        <div class="film-info">
+                            <div class="title-wrapper">
+                                <h1><%= film.title %> <span class="release-year">(<%= film.release_date ? film.release_date.substr(0, 4) : 'N/A' %>)</span></h1>
+                            </div>
+
+                            <div class="score-wrapper">
+                                <div class="score-container scuser">
+                                    <p>User Score</p>
+                                    <div class="score-box" style="--score-color: <%= userScoreColor %>;">
+                                        <span><%= userScore || 'N/A' %></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="score-container sctmdb">
+                                    <p>TMDB Score</p>
+                                    <div class="score-box" style="--score-color: <%= tmdbScoreColor %>;">
+                                        <span><%= tmdbRating || 'N/A' %></span>
+                                    </div>
+                                </div>
+                                
+                            </div>   
+
+                            <div class="overview-wrapper">
+                                <h3>Overview</h3>
+                                <p><%= film.overview %></p>
+                                <p class="director"><strong>Director:</strong> <%= direktor || 'N/A' %></p>
+                            </div>                        
+                            
+                            <div class="film-actions">
+                                <button id="favorite-btn" class="action-btn favorite" title="Dodaj u favorite">
+                                    <i class="far fa-heart"></i>
+                                </button>
+
+                                <button class="action-btn add-to-list" title="Dodaj na listu">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+
+                                <a href="/film/<%= film.id %>/detalji" class="action-btn details-btn" title="See detailed information">
+                                    <i class="fas fa-info-circle"></i> More Details
+                                </a>
+                            </div>
+
+                            <div class="misc-wrapper">
+                                <span><%= film.release_date %></span>
+                                <span><%= film.genres.map(genre => genre.name).join(', ') %></span>
+                                <span>
+                                    <%= `${Math.floor(film.runtime / 60)}h ${film.runtime % 60}m` %>
+                                </span> 
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -57,7 +95,7 @@
     <div id="trailer-modal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeTrailer()">&times;</span>
-            <iframe id="trailer-video" width="100%" height="400px" frameborder="0" allowfullscreen></iframe>
+            <iframe id="trailer-video" width="708px" height="400px" frameborder="0" allowfullscreen></iframe>
         </div>
     </div>
 
@@ -104,26 +142,41 @@
         </div>
 
         <div class="divider"></div>
-    
+
         <!-- Preporuke -->
         <div class="recommend-wrapper">
             <div class="recommend">
                 <h2>Recommendations</h2>
                 <div class="recommend-grid">
                     <% preporuke.forEach(preporuka => { %>
-                        <div class="recommend-card" 
-                             data-image="<%= preporuka.backdrop_path ? 'https://image.tmdb.org/t/p/w780' + preporuka.backdrop_path : '/images/placeholder.jpg' %>">
-                            <div class="poster"></div>
-                            <p><%= preporuka.title %></p>
-                            <div class="hrLineRecommend"><hr></div>
+                        <div class="recommend-card"
+                            data-image="<%= preporuka.backdrop_path ? 'https://image.tmdb.org/t/p/w780' + preporuka.backdrop_path : '/images/placeholder.jpg' %>">
+                            <a href="/film/<%= preporuka.id %>">
+                                <div class="poster"></div>
+                                <div class="recommend-naslov">
+                                    <p><%= preporuka.title %></p>
+                                </div>
+                            </a>
+                            <div class="rating">
+                                <% 
+                                    const stars = Math.round(preporuka.vote_average / 2);
+                                    for (let i = 0; i < stars; i++) { 
+                                %>
+                                    <span class="star">&#9733;</span>
+                                <% } %>
+                                <% for (let i = stars; i < 5; i++) { %>
+                                    <span class="star" style="color: gray;">&#9733;</span>
+                                <% } %>
+                                <span class="score"><%= preporuka.vote_average.toFixed(1) %></span>
+                            </div>
                         </div>
                     <% }) %>
                 </div>
             </div>
         </div>
+        
+        
     </div>
-      
-      
     
 
     <script>
@@ -144,16 +197,23 @@
             modal.style.display = 'none';
         }
 
-        document.getElementById('favorite-btn').addEventListener('click', function() {
-            const icon = this.querySelector('i');
-            if (icon.classList.contains('far')) {
-                icon.classList.remove('far');
-                icon.classList.add('fas');
-                icon.style.color = 'red';
+        function getScoreColor(score) {
+            if (!score || isNaN(score)) return 'grey'; // Default na sivu za "N/A"
+            const red = Math.min(255, Math.max(0, 255 - Math.round((score / 10) * 255)));
+            const green = Math.min(255, Math.max(0, Math.round((score / 10) * 255)));
+            return `rgb(${red}, ${green}, 0)`; // Generira boju od crvene do zelene
+        }
+
+        document.getElementById("favorite-btn").addEventListener("click", function () {
+            const icon = this.querySelector("i");
+            if (icon.classList.contains("far")) {
+                icon.classList.remove("far");
+                icon.classList.add("fas");
+                icon.style.color = "red";
             } else {
-                icon.classList.remove('fas');
-                icon.classList.add('far');
-                icon.style.color = 'white';
+                icon.classList.remove("fas");
+                icon.classList.add("far");
+                icon.style.color = "white";
             }
         });
 
@@ -164,6 +224,7 @@
                 card.querySelector(".poster").style.backgroundImage = `url('${imageUrl}')`;
             });
         });
+        
     </script>
 </body>
 </html>

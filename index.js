@@ -5,6 +5,14 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
+function getScoreColor(score) {
+    if (!score || isNaN(score) || score == 0) return '128, 128, 128'; // Default siva za "N/A"
+    const red = Math.min(255, Math.max(0, 255 - Math.round((score / 10) * 255)));
+    const green = Math.min(255, Math.max(0, Math.round((score / 10) * 255)));
+    return `${red}, ${green}, 0`; // Vraća RGB vrijednosti bez alpha
+}
+
+
 // Postavi EJS kao view engine
 app.set('view engine', 'ejs');
 
@@ -160,22 +168,28 @@ app.get('/film/:id', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const filmId = req.params.id;
 
-    const filmUrl = `https://api.themoviedb.org/3/movie/${filmId}?api_key=${apiKey}&append_to_response=credits,videos`;
+    const filmUrl = `https://api.themoviedb.org/3/movie/${filmId}?api_key=${apiKey}&append_to_response=credits,videos,releases`;
     const recommendationsUrl = `https://api.themoviedb.org/3/movie/${filmId}/recommendations?api_key=${apiKey}`;
 
     const mysql = require('mysql');
 
     try {
-        // Istovremeno dohvaćanje podataka o filmu i preporuka
         const [filmResponse, recommendationsResponse] = await Promise.all([
             axios.get(filmUrl),
-            axios.get(recommendationsUrl)
+            axios.get(recommendationsUrl),
         ]);
 
         const film = filmResponse.data;
-        const preporuke = recommendationsResponse.data.results.slice(0, 5);
+        const preporuke = recommendationsResponse.data.results.slice(0, 7);
 
-        // Dohvati komentar (recenziju) iz baze koristeći naziv filma
+        // Dohvatite direktora iz credits
+        const director = film.credits.crew.find(person => person.job === 'Director');
+
+        // Dohvatite PG Rating iz releases
+        const releaseInfo = film.releases.countries.find(country => country.iso_3166_1 === 'US');
+        const pgRating = releaseInfo?.certification || 'N/A';
+
+        // Spojite se na bazu za korisničke ocjene i komentare
         const connection = mysql.createConnection({
             host: process.env.DB_HOST,
             user: process.env.DB_USER,
@@ -185,18 +199,38 @@ app.get('/film/:id', async (req, res) => {
 
         connection.connect();
 
-        const query = 'SELECT komentar FROM filmovi WHERE naziv = ?';
-        connection.query(query, [film.title], (error, results) => {
-            if (error) {
-                console.error('Greška prilikom dohvaćanja komentara:', error);
-                res.status(500).send('Greška prilikom dohvaćanja komentara.');
-            } else {
-                const komentar = results.length > 0 ? results[0].komentar : null;
+        connection.query(
+            'SELECT ocjena, komentar FROM filmovi WHERE naziv = ?',
+            [film.title],
+            (error, results) => {
+                if (error) {
+                    console.error('Greška prilikom dohvaćanja korisničkih ocjena i komentara:', error);
+                    res.status(500).send('Greška prilikom dohvaćanja korisničkih ocjena i komentara.');
+                } else {
+                    const userScores = results.map(row => row.ocjena);
+                    const komentar = results.length > 0 ? results[0].komentar : null;
+                    const userScore = userScores.length
+                        ? (userScores.reduce((a, b) => a + b, 0) / userScores.length).toFixed(1)
+                        : '0';
 
-                // Renderiraj stranicu s podacima o filmu, komentarom i preporukama
-                res.render('film', { film, komentar, preporuke });
+                    const userScoreColor = getScoreColor(userScore);
+                    const tmdbScoreColor = getScoreColor(film.vote_average);
+                    
+                    res.render('film', {
+                        film,
+                        direktor: director ? director.name : 'N/A',
+                        tmdbRating: film.vote_average.toFixed(1),
+                        userScore,
+                        pgRating,
+                        komentar,
+                        preporuke,
+                        userScoreColor,
+                        tmdbScoreColor,
+                    });
+                        
+                }
             }
-        });
+        );
 
         connection.end();
     } catch (error) {
