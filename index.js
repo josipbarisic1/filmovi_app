@@ -4,30 +4,60 @@ const axios = require('axios');
 const path = require('path');
 const app = express();
 const port = 3000;
+const globalSeasonCache = {};
 
 function getScoreColor(score) {
-    if (!score || isNaN(score) || score == 0) return '128, 128, 128'; // Default siva za "N/A"
+    if (!score || isNaN(score) || score == 0) return '128, 128, 128';
     const red = Math.min(255, Math.max(0, 255 - Math.round((score / 10) * 255)));
     const green = Math.min(255, Math.max(0, Math.round((score / 10) * 255)));
-    return `${red}, ${green}, 0`; // Vraća RGB vrijednosti bez alpha
+    return `${red}, ${green}, 0`;
 }
 
-
-// Postavi EJS kao view engine
 app.set('view engine', 'ejs');
 
-// Omogućimo korištenje javnog direktorija
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Middleware za parsiranje tijela zahtjeva
 app.use(express.urlencoded({ extended: true }));
 
-// Početna stranica (Index)
+async function getSeriesDetails(serijaId) {
+    const apiKey = process.env.TMDB_API_KEY;
+    const url = `https://api.themoviedb.org/3/tv/${serijaId}?api_key=${apiKey}`;
+    try {
+        const response = await axios.get(url);
+        return response.data;
+    } catch (error) {
+        console.error('Error in getSeriesDetails:', error);
+        throw error;
+    }
+}
+
+async function getSeasonDetails(serijaId, sezonaId) {
+    const apiKey = process.env.TMDB_API_KEY;
+    const url = `https://api.themoviedb.org/3/tv/${serijaId}/season/${sezonaId}?api_key=${apiKey}`;
+    try {
+        const response = await axios.get(url);
+        return response.data;
+    } catch (error) {
+        console.error('Error in getSeasonDetails:', error);
+        throw error;
+    }
+}
+
+async function getEpisodeDetails(serijaId, sezonaId, epizodaId) {
+    const apiKey = process.env.TMDB_API_KEY;
+    const url = `https://api.themoviedb.org/3/tv/${serijaId}/season/${sezonaId}/episode/${epizodaId}?api_key=${apiKey}&append_to_response=credits`;
+    try {
+        const response = await axios.get(url);
+        return response.data;
+    } catch (error) {
+        console.error('Error in getEpisodeDetails:', error);
+        throw error;
+    }
+}
+
 app.get('/', (req, res) => {
     res.render('pocetna', { title: 'Filmovi Popis' });
 });
 
-// GET Ruta za Pretraga filmova/serija/ljudi
 app.get('/pretrazi', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const naziv = req.query.naziv || '';
@@ -41,17 +71,14 @@ app.get('/pretrazi', async (req, res) => {
 
         const totalPages = data.total_pages;
 
-        // Kreiraj paginaciju
         const pagination = generatePagination(page, totalPages);
 
-        // Dodaj 'pagination' u render podatke zajedno s ostalim informacijama
         res.render('pretrazi_film', { data, naziv, category, pagination, page, totalPages });
     } catch (error) {
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
     }
 });
 
-// Funkcija za generiranje paginacije
 function generatePagination(currentPage, totalPages) {
     let pagination = [];
 
@@ -72,7 +99,6 @@ function generatePagination(currentPage, totalPages) {
     return pagination;
 }
 
-// POST Ruta za Pretraga filmova/serija/ljudi
 app.post('/pretrazi', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const naziv = req.body.naziv || '';
@@ -93,8 +119,6 @@ app.post('/pretrazi', async (req, res) => {
     }
 });
 
-
-// Dodavanje filma (spremanje u bazu)
 app.get('/dodaj/:id', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const filmId = req.params.id;
@@ -104,7 +128,6 @@ app.get('/dodaj/:id', async (req, res) => {
         const response = await axios.get(url);
         const film = response.data;
 
-        // Spojite se na bazu i dodajte film
         const mysql = require('mysql');
         const connection = mysql.createConnection({
             host: process.env.DB_HOST,
@@ -137,7 +160,6 @@ app.get('/dodaj/:id', async (req, res) => {
     }
 });
 
-// Popis filmova
 app.get('/popis', (req, res) => {
     const mysql = require('mysql');
     const connection = mysql.createConnection({
@@ -163,7 +185,6 @@ app.get('/popis', (req, res) => {
     connection.end();
 });
 
-// Dodavanje rute za prikaz filma s recenzijom i preporukama
 app.get('/film/:id', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const filmId = req.params.id;
@@ -182,14 +203,11 @@ app.get('/film/:id', async (req, res) => {
         const film = filmResponse.data;
         const preporuke = recommendationsResponse.data.results.slice(0, 7);
 
-        // Dohvatite direktora iz credits
         const director = film.credits.crew.find(person => person.job === 'Director');
 
-        // Dohvatite PG Rating iz releases
         const releaseInfo = film.releases.countries.find(country => country.iso_3166_1 === 'US');
         const pgRating = releaseInfo?.certification || 'N/A';
 
-        // Spojite se na bazu za korisničke ocjene i komentare
         const connection = mysql.createConnection({
             host: process.env.DB_HOST,
             user: process.env.DB_USER,
@@ -239,18 +257,21 @@ app.get('/film/:id', async (req, res) => {
     }
 });
 
-
-// Ruta za prikaz svih glumaca i ekipe filma
 app.get('/film/:id/glumci', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const filmId = req.params.id;
 
-    const url = `https://api.themoviedb.org/3/movie/${filmId}/credits?api_key=${apiKey}`;
+    const filmUrl = `https://api.themoviedb.org/3/movie/${filmId}?api_key=${apiKey}`;
+    const creditsUrl = `https://api.themoviedb.org/3/movie/${filmId}/credits?api_key=${apiKey}`;
     try {
-        const response = await axios.get(url);
-        const credits = response.data;
+        const [creditsResponse, filmResponse] = await Promise.all([
+            axios.get(creditsUrl),
+            axios.get(filmUrl)
+        ]);
 
-        // Razvrstavanje ekipe prema kategorijama
+        const credits = creditsResponse.data;
+        const film = filmResponse.data;
+
         const crewByDepartment = credits.crew.reduce((acc, crewMember) => {
             if (!acc[crewMember.department]) {
                 acc[crewMember.department] = [];
@@ -259,52 +280,248 @@ app.get('/film/:id/glumci', async (req, res) => {
             return acc;
         }, {});
 
-        res.render('film_glumci', { cast: credits.cast, crewByDepartment });
+        res.render('film_glumci', {
+            cast: credits.cast || [],
+            crewByDepartment,
+            mediaType: 'movie',
+            filmTitle: film.title || 'N/A',
+            releaseYear: film.release_date?.substr(0, 4) || 'N/A',
+            mediaId: filmId
+        });
     } catch (error) {
-        console.error('Greška prilikom dohvaćanja glumaca i ekipe filma:', error);
-        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja glumaca i ekipe filma.');
+        console.error('Error fetching movie credits:', error);
+        res.status(500).send('An error occurred while fetching movie credits.');
     }
 });
 
 
-
-// Dodavanje rute za prikaz serije
 app.get('/serija/:id', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const serijaId = req.params.id;
 
-    const url = `https://api.themoviedb.org/3/tv/${serijaId}?api_key=${apiKey}&append_to_response=credits,seasons`;
+    const serijaUrl = `https://api.themoviedb.org/3/tv/${serijaId}?api_key=${apiKey}&append_to_response=videos,credits,recommendations`;
     try {
-        const response = await axios.get(url);
+        const response = await axios.get(serijaUrl);
         const serija = response.data;
 
-        res.render('serija', { serija });
+        const preporuke = serija.recommendations?.results?.slice(0, 7) || [];
+
+        const creator = serija.created_by.length > 0 ? serija.created_by[0].name : 'N/A';
+        const trailer = serija.videos?.results?.find(video => video.type === "Trailer");
+        if (!trailer) {
+            console.log("Trailer nije pronađen za ovu seriju.");
+        }
+
+        const mysql = require('mysql');
+        const connection = mysql.createConnection({
+            host: process.env.DB_HOST,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
+        });
+
+        connection.connect();
+
+        connection.query(
+            'SELECT ocjena, komentar FROM serije WHERE naziv = ?',
+            [serija.name],
+            (error, results) => {
+                if (error) {
+                    console.error('Greška prilikom dohvaćanja korisničkih ocjena i komentara:', error);
+                    res.status(500).send('Greška prilikom dohvaćanja korisničkih ocjena i komentara.');
+                } else {
+                    const userScores = results.map(row => row.ocjena);
+                    const komentar = results.length > 0 ? results[0].komentar : null;
+                    const userScore = userScores.length
+                        ? (userScores.reduce((a, b) => a + b, 0) / userScores.length).toFixed(1)
+                        : '0';
+
+                    const userScoreColor = getScoreColor(userScore);
+                    const tmdbScoreColor = getScoreColor(serija.vote_average);
+
+                    res.render('serija', {
+                        serija,
+                        creator,
+                        seasons: serija.seasons,
+                        tmdbRating: serija.vote_average.toFixed(1),
+                        userScore,
+                        komentar,
+                        preporuke,
+                        userScoreColor,
+                        tmdbScoreColor,
+                    });
+                }
+            }
+        );
+
+        connection.end();
     } catch (error) {
+        console.error('Došlo je do pogreške prilikom dohvaćanja podataka o seriji:', error);
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka o seriji.');
     }
 });
 
-// Dodavanje rute za prikaz osobe
+app.get('/serija/:id/glumci', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const serijaId = req.params.id;
+
+    const url = `https://api.themoviedb.org/3/tv/${serijaId}`;
+    const creditsUrl = `${url}/aggregate_credits?api_key=${apiKey}`;
+    try {
+        const [creditsResponse, seriesResponse] = await Promise.all([
+            axios.get(creditsUrl),
+            axios.get(`${url}?api_key=${apiKey}`)
+        ]);
+
+        const credits = creditsResponse.data;
+        const series = seriesResponse.data;
+
+        const crewByDepartment = credits.crew.reduce((acc, crewMember) => {
+            if (!acc[crewMember.department]) {
+                acc[crewMember.department] = [];
+            }
+            acc[crewMember.department].push(crewMember);
+            return acc;
+        }, {});
+
+        res.render('film_glumci', {
+            cast: credits.cast,
+            crewByDepartment,
+            mediaType: 'tv',
+            filmTitle: series.name,
+            releaseYear: series.first_air_date?.substr(0, 4),
+            mediaId: serijaId
+        });
+    } catch (error) {
+        console.error('Error fetching TV series credits:', error);
+        res.status(500).send('An error occurred while fetching cast and crew data for the TV series.');
+    }
+});
+
+app.get('/serija/:id/seasons', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const serijaId = req.params.id;
+
+    const url = `https://api.themoviedb.org/3/tv/${serijaId}?api_key=${apiKey}`;
+    try {
+        const response = await axios.get(url);
+        const serija = response.data;
+
+        serija.seasons = serija.seasons.filter(season => season.air_date && season.episode_count > 0);
+
+        res.render('serija_sezone', {
+            serija,
+            firstSeasonYear: serija.seasons[0]?.air_date?.substr(0, 4)
+        });
+    } catch (error) {
+        console.error('Error fetching series seasons:', error);
+        res.status(500).send('An error occurred while fetching series seasons.');
+    }
+});
+
+app.get('/serija/:id/season/:seasonNumber', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const seriesId = req.params.id;
+    const seasonNumber = req.params.seasonNumber;
+
+    const seasonUrl = `https://api.themoviedb.org/3/tv/${seriesId}/season/${seasonNumber}?api_key=${apiKey}`;
+    const seriesUrl = `https://api.themoviedb.org/3/tv/${seriesId}?api_key=${apiKey}`;
+
+    try {
+        const [seasonResponse, seriesResponse] = await Promise.all([
+            axios.get(seasonUrl),
+            axios.get(seriesUrl),
+        ]);
+
+        const season = seasonResponse.data;
+        const serija = seriesResponse.data;
+
+        globalSeasonCache[season.id] = season;
+
+        res.render('sezona', {
+            serija,
+            season,
+        });
+    } catch (error) {
+        console.error('Error fetching season data:', error);
+        res.status(500).send('An error occurred while fetching season data.');
+    }
+});
+
+app.get('/api/episode/:seriesId/season/:seasonNumber/episode/:episodeNumber', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const { seriesId, seasonNumber, episodeNumber } = req.params;
+
+    const episodeCreditsUrl = `https://api.themoviedb.org/3/tv/${seriesId}/season/${seasonNumber}/episode/${episodeNumber}/credits?api_key=${apiKey}`;
+
+    try {
+        const creditsResponse = await axios.get(episodeCreditsUrl);
+        const credits = creditsResponse.data;
+
+        res.json({ guest_stars: credits.guest_stars });
+    } catch (error) {
+        console.error('Error fetching episode credits:', error);
+        res.status(500).json({ error: 'Failed to fetch episode credits.' });
+    }
+});
+
+app.get('/serija/:serijaId/sezona/:sezonaId/epizoda/:epizodaId/cast', async (req, res) => {
+    const { serijaId, sezonaId, epizodaId } = req.params;
+
+    try {
+        const [episode, serija, season] = await Promise.all([
+            getEpisodeDetails(serijaId, sezonaId, epizodaId),
+            getSeriesDetails(serijaId),
+            getSeasonDetails(serijaId, sezonaId)
+        ]);
+
+        res.render('epizoda_glumci', {
+            serija,
+            episode,
+            season,
+            seasonYear: season.air_date?.substr(0, 4)
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error fetching episode cast details');
+    }
+});
+
 app.get('/osoba/:id', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const osobaId = req.params.id;
 
-    const url = `https://api.themoviedb.org/3/person/${osobaId}?api_key=${apiKey}&append_to_response=movie_credits,tv_credits`;
+    const url = `https://api.themoviedb.org/3/person/${osobaId}?api_key=${apiKey}&append_to_response=movie_credits,tv_credits,combined_credits,external_ids`;
+
     try {
         const response = await axios.get(url);
         const osoba = response.data;
 
+        const combinedCredits = osoba.combined_credits?.cast || [];
+
+        const knownFor = combinedCredits
+            .filter(project => project.poster_path)
+            .sort((a, b) => {
+                const aOrder = a.order ?? Number.MAX_VALUE;
+                const bOrder = b.order ?? Number.MAX_VALUE;
+
+                if (aOrder !== bOrder) {
+                    return aOrder - bOrder;
+                }
+
+                return b.popularity - a.popularity;
+            })
+            .slice(0, 6);
+
+        osoba.known_for = knownFor;
+
         res.render('osoba', { osoba });
     } catch (error) {
-        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka o osobi.');
+        console.error('Error fetching person data:', error);
+        res.status(500).send('An error occurred while fetching person data.');
     }
 });
 
-
-
-
-
-// Pokreni server
 app.listen(port, () => {
     console.log(`Server pokrenut na http://localhost:${port}`);
 });

@@ -71,8 +71,6 @@
             <% }) %>
         </div>
         
-
-        <!-- Paginacija -->
         <div class="pagination">
             <% if (data.page > 1) { %>
                 <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&page=<%= data.page - 1 %>">Prethodna</a>
@@ -98,40 +96,33 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // Ograničavanje opisa filma
             const descriptions = document.querySelectorAll(".movie-details p");
     
             descriptions.forEach(function (description) {
-                const maxLength = 175; // Maksimalna duljina opisa u znakovima
+                const maxLength = 175; 
                 let text = description.textContent.trim();
     
-                // Provjerava treba li skratiti opis
                 if (text.length > maxLength) {
                     let truncatedText = text.substr(0, maxLength);
-                    // Skrati do zadnje cijele riječi
                     truncatedText = truncatedText.substr(0, Math.min(truncatedText.length, truncatedText.lastIndexOf(" ")));
                     description.textContent = truncatedText + "...";
                 }
             });
     
-            // Ograničavanje naslova filma s godinom
             const titles = document.querySelectorAll(".movie-title-full, .movie-title-mobile");
     
             titles.forEach(function (title) {
-                const maxWords = 15; // Maksimalan broj riječi u naslovu
+                const maxWords = 15; 
                 let text = title.textContent.trim();
 
-                // Određivanje jesu li zagrade i godina uključeni
                 const yearMatch = text.match(/\((\d{4})\)$/);
                 let titleWithoutYear = yearMatch ? text.substring(0, text.lastIndexOf('(')).trim() : text;
                 let words = titleWithoutYear.split(" ");
 
-                // Skrati naslov samo ako prelazi maksimalan broj riječi
                 if (words.length > maxWords) {
                     let truncatedTitle = words.slice(0, maxWords).join(" ");
                     title.textContent = truncatedTitle + "..." + (yearMatch ? ` (${yearMatch[1]})` : "");
                 } else {
-                    // Ako nije skraćen, samo ponovno sastavite naslov sa godinom (ako postoji)
                     title.textContent = titleWithoutYear + (yearMatch ? ` (${yearMatch[1]})` : "");
                 }
             });

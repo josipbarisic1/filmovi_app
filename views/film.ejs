@@ -6,25 +6,45 @@
     <title><%= film.title %> - Detalji</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/film.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- Font Awesome za ikone -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap"> <!-- Google Font za moderan izgled -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap">
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+
 </head>
 <body>
     <header>
         <nav>
-            <h1><a href="/" class="logo">Moviebase</a></h1>
-            <ul>
-                <li><a href="/pretrazi?category=movie">Movies</a></li>
-                <li><a href="/pretrazi?category=tv">Shows</a></li>
-                <li><a href="/pretrazi?category=person">People</a></li>
-                <li><a href="#">More</a></li>
-            </ul>
+            <div class="header-left">
+                <ul class="header-left-list">
+                    <li>
+                        <a href="/" class="logo">
+                            <img src="/images/MBlogo.png" width="30" height="30" alt="Logo" class="logo-img">
+                            <h4>MovieBase</h4>
+                        </a>
+                    </li>                    
+                    <li><a href="/pretrazi?category=movie">Movies</a></li>
+                    <li><a href="/pretrazi?category=tv">TV Shows</a></li>
+                    <li><a href="/pretrazi?category=person">People</a></li>
+                    <li><a href="#">More</a></li>
+                </ul>
+            </div>
+
+            <div class="header-right">
+                <ul class="header-right-list">
+                    <li><a href="/" class="logo">Login</a></li>
+                    <li>
+                        <a href="/pretrazi?category=movie">
+                            <i class="fas fa-search"></i>Search
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </nav>
     </header>
 
     <section class="film-section">
         <div class="film-header" style="background-image: url('https://image.tmdb.org/t/p/original<%= film.backdrop_path || film.poster_path %>');">
-            <div class="overlay"></div> <!-- Dodajemo overlay koji će dodatno zatamniti pozadinu -->
+            <div class="overlay"></div>
             <div class="film-content-wrapper">
                 <div class="film-content-container">
                     <div class="poster-container">
@@ -102,7 +122,6 @@
     <div class="main-content-wrapper">
         <div class="cast-wrapper">
             <div class="content-wrapper">
-                <!-- Glumci -->
                 <section class="film-cast">
                     <h2>Top Bill Cast</h2>
                     <div class="cast-scroll-wrapper">
@@ -127,7 +146,7 @@
                 <div class="hrLine">
                     <hr>
                 </div>
-                <!-- Recenzije -->
+
                 <section class="comments-section">
                     <h2>Reviews</h2>
                     <% if (komentar) { %>
@@ -141,9 +160,8 @@
             </div>
         </div>
 
-        <div class="divider"></div>
+        <!-- <div class="divider"></div> -->
 
-        <!-- Preporuke -->
         <div class="recommend-wrapper">
             <div class="recommend">
                 <h2>Recommendations</h2>
@@ -177,6 +195,35 @@
         
         
     </div>
+
+    <div class="blank"></div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-left">
+                <h2>Moviebase</h2>
+                <p>Your trusted source for entertainment.</p>
+            </div>
+            <div class="footer-middle">
+                <ul>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/terms">Terms of Service</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="footer-right">
+                <p>&copy; 2024 Moviebase. All rights reserved.</p>
+                <p>Follow us:</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
     
 
     <script>
@@ -187,6 +234,8 @@
                 const iframe = document.getElementById('trailer-video');
                 iframe.src = `https://www.youtube.com/embed/${trailerKey}`;
                 modal.style.display = 'flex';
+            } else {
+                console.warn("Trailer nije pronađen za ovaj film.");
             }
         }
 
@@ -198,10 +247,10 @@
         }
 
         function getScoreColor(score) {
-            if (!score || isNaN(score)) return 'grey'; // Default na sivu za "N/A"
+            if (!score || isNaN(score)) return 'grey'; 
             const red = Math.min(255, Math.max(0, 255 - Math.round((score / 10) * 255)));
             const green = Math.min(255, Math.max(0, Math.round((score / 10) * 255)));
-            return `rgb(${red}, ${green}, 0)`; // Generira boju od crvene do zelene
+            return `rgb(${red}, ${green}, 0)`; 
         }
 
         document.getElementById("favorite-btn").addEventListener("click", function () {

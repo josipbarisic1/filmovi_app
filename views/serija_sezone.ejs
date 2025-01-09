@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= serija.name %> - Detalji</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/sezona.css">
+    <link rel="stylesheet" href="/css/serija_sezone.css">
+    <link rel="stylesheet" href="/css/serija.css">
+
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="header-left">
+                <ul class="header-left-list">
+                    <li>
+                        <a href="/" class="logo">
+                            <img src="/images/MBlogo.png" width="30" height="30" alt="Logo" class="logo-img">
+                            <h4>MovieBase</h4>
+                        </a>
+                    </li>                    
+                    <li><a href="/pretrazi?category=movie">Movies</a></li>
+                    <li><a href="/pretrazi?category=tv">TV Shows</a></li>
+                    <li><a href="/pretrazi?category=person">People</a></li>
+                    <li><a href="#">More</a></li>
+                </ul>
+            </div>
+
+            <div class="header-right">
+                <ul class="header-right-list">
+                    <li><a href="/" class="logo">Login</a></li>
+                    <li>
+                        <a href="/pretrazi?category=movie">
+                            <i class="fas fa-search"></i>Search
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+
+    <div class="seasons-wrapper">
+        <div class="season-header">
+            <h1>
+                <%= serija.name %> <span>(<%= serija.first_air_date?.substr(0, 4) || serija.seasons[0]?.air_date?.substr(0, 4) || 'N/A' %>)</span>
+            </h1>
+            <a href="/serija/<%= serija.id %>" class="back-to-main">
+                <span style="color: white; padding-right: 5px;">◀</span> Back to main
+            </a>
+        </div>
+
+        <div class="season-wrapper">
+            <% serija.seasons.forEach(season => { %>
+                <div class="seasons-content">
+                    <div class="season-card">
+                        <a href="/serija/<%= serija.id %>/season/<%= season.season_number %>">
+                            <img class="season-poster" src="<%= season.poster_path ? `https://image.tmdb.org/t/p/w200${season.poster_path}` : '/images/placeholder.jpg' %>" alt="Season Poster">
+                        </a>
+                        <div class="season-details">
+                            <div class="season-details-name">
+                                <a href="/serija/<%= serija.id %>/season/<%= season.season_number %>">
+                                    <h3>Season <%= season.season_number %></h3>
+                                </a>
+                            </div>
+        
+                            <div class="misc-wrapper tockice marginR3">
+                                <div class="tockice-score">
+                                    <span><%= serija.vote_average.toFixed(1) %></span>
+                                </div>
+                                <span><%= season.air_date?.substr(0, 4) || 'N/A' %></span>
+                                <span><%= season.episode_count || 'N/A' %> eps</span>
+                            </div>
+        
+                            <div class="season-details-messages">
+                                <p>
+                                    <% if (season && season.air_date) { %>
+                                        Season <%= season.season_number %> of <%= serija.name %> premiered on <%= new Date(season.air_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>.
+                                    <% } else { %>
+                                        Information about this season is not available.
+                                    <% } %>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+    
+    
+    
+    <footer>
+        <div class="footer-content">
+            <div class="footer-left">
+                <h2>Moviebase</h2>
+                <p>Your trusted source for entertainment.</p>
+            </div>
+            <div class="footer-middle">
+                <ul>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/terms">Terms of Service</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="footer-right">
+                <p>&copy; 2024 Moviebase. All rights reserved.</p>
+                <p>Follow us:</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

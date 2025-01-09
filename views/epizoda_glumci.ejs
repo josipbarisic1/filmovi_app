@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= serija.title %> - Episode <%= episode.episode_number %> Full Cast</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/film_glumci.css">
+
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="header-left">
+                <ul class="header-left-list">
+                    <li>
+                        <a href="/" class="logo">
+                            <img src="/images/MBlogo.png" width="30" height="30" alt="Logo" class="logo-img">
+                            <h4>MovieBase</h4>
+                        </a>
+                    </li>
+                    <li><a href="/pretrazi?category=movie">Movies</a></li>
+                    <li><a href="/pretrazi?category=tv">TV Shows</a></li>
+                    <li><a href="/pretrazi?category=person">People</a></li>
+                    <li><a href="#">More</a></li>
+                </ul>
+            </div>
+
+            <div class="header-right">
+                <ul class="header-right-list">
+                    <li><a href="/" class="logo">Login</a></li>
+                    <li>
+                        <a href="/pretrazi?category=movie">
+                            <i class="fas fa-search"></i>Search
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="season-header">
+            <h1>
+                <%= season.season_number %>x<%= episode.episode_number %> <%= episode.name %> <span>(<%= seasonYear || 'N/A' %>)</span>
+            </h1>
+            <a href="/serija/<%= serija.id %>/season/<%= episode.season_number %>" class="back-to-episode">
+                <span style="color: white; padding-right: 5px;">◀</span> Back to episode
+            </a> 
+        </div>
+        <section class="film-cast">
+            <div class="film-cast-SR">
+                <h2>Season Regulars</h2>
+                <% if (episode.credits && episode.credits.cast && episode.credits.cast.length > 0) { %>
+                    <div class="cast-grid">
+                        <% episode.credits.cast.forEach(actor => { %>
+                            <div class="cast-card">
+                                <a href="/osoba/<%= actor.id %>">
+                                    <img src="<%= actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholderPerson.jpg' %>" alt="<%= actor.name %>">
+                                </a>
+                                <p><strong><%= actor.name %></strong> as <%= actor.character || 'Unknown character' %></p>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <p>No regular cast available for this episode.</p>
+                <% } %>
+                </div>
+        
+            <div class="film-cast-GS">
+                <h2>Guest Stars</h2>
+                <% if (episode.credits && episode.credits.guest_stars && episode.credits.guest_stars.length > 0) { %>
+                    <div class="cast-grid">
+                        <% episode.credits.guest_stars.forEach(actor => { %>
+                            <div class="cast-card">
+                                <a href="/osoba/<%= actor.id %>">
+                                    <img src="<%= actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholderPerson.jpg' %>" alt="<%= actor.name %>">
+                                </a>
+                                <p><strong><%= actor.name %></strong> as <%= actor.character || 'Unknown character' %></p>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <p>No guest stars available for this episode.</p>
+                <% } %>
+                </div>
+        </section>
+        
+        <section class="film-crew">
+            <h2>Crew</h2>
+            <% if (episode.credits && episode.credits.crew && episode.credits.crew.length > 0) { %>
+                <% const crewByDepartment = episode.credits.crew.reduce((acc, member) => {
+                    if (!acc[member.department]) acc[member.department] = [];
+                    acc[member.department].push(member);
+                    return acc;
+                }, {}); %>
+                <% Object.keys(crewByDepartment).forEach(department => { %>
+                    <h3><%= department %></h3>
+                    <div class="crew-grid">
+                        <% crewByDepartment[department].forEach(member => { %>
+                            <div class="crew-card">
+                                <a href="/osoba/<%= member.id %>">
+                                    <img src="<%= member.profile_path ? `https://image.tmdb.org/t/p/w200${member.profile_path}` : '/images/placeholderPerson.jpg' %>" alt="<%= member.name %>">
+                                </a>
+                                <p><strong><%= member.name %></strong> - <%= member.job %></p>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <p>No crew members found.</p>
+            <% } %>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-left">
+                <h2>Moviebase</h2>
+                <p>Your trusted source for entertainment.</p>
+            </div>
+            <div class="footer-middle">
+                <ul>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/terms">Terms of Service</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="footer-right">
+                <p>&copy; 2024 Moviebase. All rights reserved.</p>
+                <p>Follow us:</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

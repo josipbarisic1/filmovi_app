@@ -1,23 +1,33 @@
 .cast-grid, .crew-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(90px, 110px)); /* Još manji posteri */
+    grid-template-columns: repeat(auto-fit, minmax(90px, 110px));
     gap: 15px;
     padding: 20px;
+}
+
+.cast-card, .crew-card {
+    display: grid;
+    justify-items: center;
 }
 
 .cast-card img, .crew-card img {
     border-radius: 8px;
     width: 100%;
-    height: 130px; /* Smanjena visina */
+    height: 80px;
     object-fit: cover;
+}
+
+.cast-card a, .crew-card a {
+    width: 75%;
 }
 
 .cast-card p, .crew-card p {
     text-align: center;
-    font-size: 0.75rem; /* Manji font za opis ispod postera */
+    font-size: 0.75rem;
 }
 
 .crew-card img {
     border: 1px solid #ddd;
     background-color: #f4f4f4;
 }
+

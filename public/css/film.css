@@ -1,10 +1,10 @@
 body {
-    font-family: 'Roboto', Arial, sans-serif; /* Koristimo Roboto font */
+    font-family: 'Roboto', Arial, sans-serif; 
     margin: 0;
     padding: 0;
     background-color: #f4f4f4;
     color: #333;
-    line-height: 1.6; /* Malo povećan razmak između redaka za bolju čitljivost */
+    line-height: 1.6; 
 }
 
 .film-header {
@@ -13,7 +13,6 @@ body {
     background-position: center;
     padding: 10px;
     color: #fff;
-    margin-top: 40px;
 }
 
 .overlay {
@@ -22,7 +21,7 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.7); /* Povećan intenzitet zatamnjenja kako bi tekst bio lakše čitljiv */
+    background-color: rgba(0, 0, 0, 0.7); 
 }
 
 .film-content-wrapper{
@@ -53,32 +52,33 @@ body {
 .film-info {
     flex: 1;
     padding-left: 30px;
-    color: #fff; /* Bijeli tekst za bolju vidljivost na tamnoj pozadini */
+    color: #fff; 
 }
 
 .film-info h1 {
     margin-top: 0;
     margin-bottom: 0;
-    font-size: 2rem; /* Povećana veličina fonta naslova, manja od prethodne */
-    line-height: 1.3; /* Manji razmak između redaka za naslov */
+    font-size: 2rem; 
+    line-height: 1.3; 
 }
 
 .release-year {
-    color: rgba(255, 255, 255, 0.7); /* Transparentna siva boja za godinu */
+    color: rgba(255, 255, 255, 0.7); 
+    font-weight: normal;
 }
 
 .film-info h3 {
     margin-bottom: 0px;
     margin-top: 0px;
-    font-size: 1.2rem; /* Malo veći font za podnaslove */
+    font-size: 1.2rem;
     font-weight: 650;
 }
 
 .film-info p {
     margin-top: 0px;
     margin-bottom: 0px;
-    font-size: 1rem; /* Malo veći font za informacije */
-    letter-spacing: 0.5px; /* Odvajanje slova za bolju čitljivost */
+    font-size: 1rem; 
+    letter-spacing: 0.5px; 
 }
 
 .overview-wrapper{
@@ -100,31 +100,31 @@ body {
 }
 
 .score-box {
-    width: 60px; /* Promjer kruga */
+    width: 60px;
     height: 60px;
     border: 2px solid rgba(255, 255, 255, 0.6);
-    border-radius: 50%; /* Čini ga krugom */
-    background-color: rgba(var(--score-color), 0.65); /* Dinamična boja s prozirnošću */
+    border-radius: 50%; 
+    background-color: rgba(var(--score-color), 0.65); 
     display: flex;
-    align-items: center; /* Vertikalno centriranje */
-    justify-content: center; /* Horizontalno centriranje */
-    font-size: 1.2rem; /* Veličina teksta za ocjenu */
+    align-items: center; 
+    justify-content: center;
+    font-size: 1.2rem; 
     font-weight: bold;
-    color: #fff; /* Bijela boja za tekst */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Dodana sjena */
-    margin: 10px 0; /* Razmak iznad i ispod */
+    color: #fff; 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    margin: 10px 0; 
     text-align: center;
-    transition: background-color 0.3s ease, transform 0.3s ease; /* Suptilna tranzicija */
+    transition: background-color 0.3s ease, transform 0.3s ease; 
 }
 
 .score-box:hover {
-    transform: scale(1.1); /* Lagano povećanje na hover */
-    background-color: rgba(var(--score-color), 1); /* Osvijetli boju pri hoveru */
+    transform: scale(1.1);
+    background-color: rgba(var(--score-color), 1); 
 }
 
 .score-box span {
-    font-family: Arial, sans-serif; /* Zamijeni font za precizniji izgled */
-    -webkit-text-stroke: 0.5px black; /* Kontura za bolju vidljivost */
+    font-family: Arial, sans-serif; 
+    -webkit-text-stroke: 0.5px black;
 }
 
 
@@ -136,7 +136,7 @@ body {
 .film-actions {
     display: flex;
     gap: 15px;
-    padding-top: 30px; /* Povećan razmak između informacija i gumba */
+    padding-top: 30px;
 }
 
 .details-btn {
@@ -155,7 +155,7 @@ body {
 }
 
 .details-btn i {
-    margin-right: 5px; /* Odmak između ikone i teksta */
+    margin-right: 5px;
 }
 
 .details-btn:hover {
@@ -169,18 +169,19 @@ body {
     padding-top: 20px;
 }
 
+.misc-wrapper span{
+    letter-spacing: 0.05rem;
+}
+
 .misc-wrapper span:not(:first-child){
     padding-left: 30px;
 }
 
 .misc-wrapper span:not(:first-child)::before {
     content: "•";
-    margin-right: 25px; /* Razmak između točkice i teksta */
+    margin-right: 25px;
     color: white;
 }
-
-
-
 
 .content-wrapper {
     padding-left: 30px;
@@ -212,7 +213,7 @@ body {
     background: transparent;
     border: none;
     color: white;
-    font-size: 1.5rem; /* Smanjena veličina fonta za gumbe */
+    font-size: 1.5rem;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -225,7 +226,7 @@ body {
 }
 
 .play-trailer i {
-    font-size: 1rem; /* Lagano smanjeno za suptilniji izgled */
+    font-size: 1rem;
 }
 
 .action-btn:hover {
@@ -233,86 +234,95 @@ body {
 }
 
 .favorite i, .add-to-list i {
-    font-size: 1.75rem; /* Lagano smanjeno za suptilniji izgled */
+    font-size: 1.75rem;
 }
 
 .cast-scroll-wrapper {
-    overflow-x: auto; /* Omogućava horizontalno skrolanje */
-    white-space: nowrap; /* Sprječava lomljenje elemenata u novi red */
-    padding-bottom: 20px; /* Prostor za scrollbar */
-    margin-bottom: 25px; /* Malo margine za odvajanje od ostalih elemenata */
-    max-width: 100%; /* Ograničava širinu na veličinu dostupnog prostora */
+    overflow-x: auto; 
+    white-space: nowrap;
+    padding-bottom: 20px;
+    margin-bottom: 25px; 
+    max-width: 100%; 
 }
 
 .cast-horizontal-scroll {
     display: flex;
-    flex-wrap: nowrap; /* Onemogućava prelazak elemenata u novi red */
-    gap: 15px; /* Razmak između postera */
-    padding-left: 10px; /* Malo prostora na lijevoj strani za estetiku */
+    flex-wrap: nowrap;
+    gap: 15px;
+    padding-left: 10px; 
 }
 
 .cast-card {
     flex: 0 0 auto;
     text-align: center;
-    width: 120px; /* Postavljena fiksna širina za okvir */
+    width: 120px; 
     position: relative;
 }
 
 .cast-frame {
     display: flex;
-    flex-direction: column; /* Poster gore, tekst dolje */
-    background-color: #fff; /* Bijela pozadina za okvir */
+    flex-direction: column; 
+    background-color: #fff; 
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Dodana sjena za okvir */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); 
     overflow: hidden;
     transition: transform 0.3s ease;
-    height: 220px; /* Postavljena visina okvira */
+    height: 220px;
 }
 
 .cast-frame img {
     width: 100%;
-    height: 150px; /* Visina postera unutar okvira */
+    height: 150px; 
     object-fit: cover;
 }
 
 .cast-info {
     padding: 5px;
-    background-color: #f9f9f9; /* Svijetla pozadina za tekst */
+    background-color: #f9f9f9;
     text-align: center;
 }
 
 .cast-name {
-    font-size: 0.85rem; /* Ime glumca */
+    font-size: 0.85rem; 
     margin: 0;
     color: #333;
+    white-space: nowrap; 
+    overflow: hidden;    
+    text-overflow: ellipsis; 
+    max-width: 150px;
 }
 
 .cast-character {
-    font-size: 0.75rem; /* Uloga glumca */
+    font-size: 0.75rem;
     margin: 0;
     color: #555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
 }
 
 .main-content-wrapper {
     display: flex;
-    position: relative; /* Potrebno za apsolutno pozicioniranje linije */
+    position: relative; 
     justify-content: space-between;
-    align-items: stretch; /* Istezanje djece prema visini roditelja */
-    max-width: 1200px;
+    align-items: stretch; 
+    max-width: 1400px;
     margin: 0 auto;
     gap: 20px;
     padding-top: 1.5rem;
 }
 
 .cast-wrapper {
-    flex: 3; /* Glavna sekcija zauzima veći prostor */
-    min-width: 0; /* Sprječava širenje zbog sadržaja */
+    flex: 3; 
+    min-width: 0; 
+    box-shadow: 1px 0px #888888;
 }
 
 
 .recommend-wrapper {
-    flex: 1; /* Preporuke zauzimaju manji dio */
-    max-width: 300px;
+    flex: 1; 
+    max-width: 250px;
     padding: 10px;
 }
 
@@ -327,12 +337,12 @@ body {
 .recommend-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 15px; /* Razmak između kartica */
+    gap: 15px; 
 }
 
 .recommend-card {
     display: flex;
-    flex: 0 0 120px; /* Smanjili širinu kartica */
+    flex: 0 0 120px; 
     flex-direction: column;
     align-items: center;
     background-color: transparent;
@@ -343,7 +353,7 @@ body {
 
 .recommend-card .poster {
     width: 100%;
-    aspect-ratio: 16 / 9; /* Landscape format */
+    aspect-ratio: 16 / 9;
     background-size: cover;
     background-position: center;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
@@ -354,9 +364,9 @@ body {
 
 .recommend-card img {
     width: 100%;
-    aspect-ratio: 16 / 9; /* Landscape omjer */
+    aspect-ratio: 16 / 9; 
     object-fit: cover;
-    border-radius: 8px; /* Zaobljeni rubovi */
+    border-radius: 8px; 
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
@@ -386,14 +396,14 @@ body {
     align-items: center;
     gap: 5px;
     font-size: 0.9rem;
-    color: gold; /* Boja zvjezdica */
+    color: gold;
     padding: 5px 10px;
     text-align: left;
 }
 
 .recommend-card .rating .star {
-    color: gold; /* Boja zvjezdica */
-    font-size: 1rem; /* Veličina zvjezdica */
+    color: gold;
+    font-size: 1rem; 
 }
 
 .recommend-card .rating .score {
@@ -448,15 +458,22 @@ body {
 .divider {
     position: relative;
     top: 25px;
-    bottom: 0; /* Istezanje linije do donjeg dijela roditelja */
+    bottom: 0;
     width: 1px;
-    background-color: #9b9b9b; /* Boja linije */
+    background-color: #9b9b9b; 
+    z-index: -1;
+}
+
+.blank{
+    padding-top: 15px;
+    z-index: 20;
+    background-color: rgb(242, 242, 242);
 }
 
 @media screen and (max-width: 768px) {
     #trailer-video {
-        width: 100%; /* Podesi širinu na 100% dostupnog prostora */
-        height: auto; /* Automatski prilagodi visinu */
+        width: 100%; 
+        height: auto; 
     }
 }
 

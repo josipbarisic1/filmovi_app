@@ -3,22 +3,329 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= serija.name %> - Detalji</title>
+    <title><%= serija.title %> - Detalji</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/film.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap">
     <link rel="stylesheet" href="/css/serija.css">
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
 </head>
 <body>
+
+    <% const validSeasons = seasons.filter(season => season.air_date && season.episode_count > 0); %>
+    <% const lastSeason = validSeasons[validSeasons.length - 1]; %>
+    <% const upcomingSeason = seasons.find(season => !season.air_date && season.season_number > lastSeason.season_number); %>
+
     <header>
         <nav>
-            <h1><a href="/" class="logo">Filmska baza</a></h1>
+            <div class="header-left">
+                <ul class="header-left-list">
+                    <li>
+                        <a href="/" class="logo">
+                            <img src="/images/MBlogo.png" width="30" height="30" alt="Logo" class="logo-img">
+                            <h4>MovieBase</h4>
+                        </a>
+                    </li>
+                    <li><a href="/pretrazi?category=movie">Movies</a></li>
+                    <li><a href="/pretrazi?category=tv">TV Shows</a></li>
+                    <li><a href="/pretrazi?category=person">People</a></li>
+                    <li><a href="#">More</a></li>
+                </ul>
+            </div>
+
+            <div class="header-right">
+                <ul class="header-right-list">
+                    <li><a href="/" class="logo">Login</a></li>
+                    <li>
+                        <a href="/pretrazi?category=movie">
+                            <i class="fas fa-search"></i>Search
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </nav>
     </header>
-    <div class="serija-details">
-        <h1><%= serija.name %> (<%= serija.first_air_date.substr(0, 4) %>)</h1>
-        <img src="https://image.tmdb.org/t/p/w300<%= serija.poster_path %>" alt="Poster za <%= serija.name %>">
-        <p><strong>Ocjena:</strong> <%= serija.vote_average %> / 10</p>
-        <p><strong>Prva epizoda:</strong> <%= serija.first_air_date %></p>
-        <p><strong>Opis:</strong> <%= serija.overview %></p>
+
+    <section class="film-section">
+        <div class="film-header" style="background-image: url('https://image.tmdb.org/t/p/original<%= serija.backdrop_path || serija.poster_path %>');">
+            <div class="overlay"></div>
+            <div class="film-content-wrapper">
+                <div class="film-content-container">
+                    <div class="poster-container">
+                        <img src="https://image.tmdb.org/t/p/w300<%= serija.poster_path %>" alt="<%= serija.title %> Poster" class="film-poster">
+                        <% if (serija.videos && serija.videos.results.length > 0) { %>
+                            <button class="action-btn play-trailer" onclick="playTrailer()" title="Pogledaj trailer">
+                                <i class="fas fa-play"></i> Play Trailer
+                            </button>
+                        <% } %>
+                    </div>
+                    <div class="film-info-wrapper">
+                        <div class="film-info">
+                            <div class="title-wrapper">
+                                <h1><%= serija.name || serija.title %> <span class="release-year">(<%= serija.first_air_date ? serija.first_air_date.substr(0, 4) : 'N/A' %>)</span></h1>
+                            </div>
+
+                            <div class="score-wrapper">
+                                <div class="score-container scuser">
+                                    <p>User Score</p>
+                                    <div class="score-box" style="--score-color: <%= userScoreColor %>;">
+                                        <span><%= userScore || 'N/A' %></span>
+                                    </div>
+                                </div>
+
+                                <div class="score-container sctmdb">
+                                    <p>TMDB Score</p>
+                                    <div class="score-box" style="--score-color: <%= tmdbScoreColor %>;">
+                                        <span><%= tmdbRating || 'N/A' %></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="overview-wrapper">
+                                <h3>Overview</h3>
+                                <p><%= serija.overview %></p>
+                                <% if (creator && creator !== 'N/A') { %>
+                                    <p class="director"><strong>Creator:</strong> <%= creator %></p>
+                                <% } %>
+                            </div>
+                            
+
+                            <div class="film-actions">
+                                <button id="favorite-btn" class="action-btn favorite" title="Dodaj u favorite">
+                                    <i class="far fa-heart"></i>
+                                </button>
+
+                                <button class="action-btn add-to-list" title="Dodaj na listu">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+
+                                <a href="/serija/<%= serija.id %>/detalji" class="action-btn details-btn" title="See detailed information">
+                                    <i class="fas fa-info-circle"></i> More Details
+                                </a>
+                                
+                            </div>
+
+                            <div class="misc-wrapper">
+                                <span><%= serija.genres.map(genre => genre.name).join(', ') %></span>
+                                <span>Seasons: <%= validSeasons.length %></span>
+                                <span>Episodes: <%= validSeasons.reduce((sum, season) => sum + (season.episode_count || 0), 0) %></span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="trailer-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeTrailer()">&times;</span>
+            <iframe id="trailer-video" width="708px" height="400px" frameborder="0" allowfullscreen></iframe>
+        </div>
     </div>
+
+    <div class="main-content-wrapper">
+        <div class="cast-season-wrapper">
+            <div class="cast-wrapper">
+                <div class="content-wrapper">
+                    <section class="film-cast">
+                        <h2>Series Cast</h2>
+                        <div class="cast-scroll-wrapper">
+                            <div class="cast-horizontal-scroll">
+                                <% serija.credits.cast.slice(0, 10).forEach(actor => { %>
+                                    <div class="cast-card">
+                                        <div class="cast-frame">
+                                            <a href="/osoba/<%= actor.id %>">
+                                                <img src="<%= actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholder.jpg' %>" alt="<%= actor.name %>">
+                                            </a>
+                                            <div class="cast-info">
+                                                <p class="cast-name"><strong><%= actor.name %></strong></p>
+                                                <p class="cast-character"><%= actor.character %></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            </div>
+                        </div>
+                        <a href="/serija/<%= serija.id %>/glumci" class="capitalLink">Full Cast & Crew</a>
+                        <div class="hrHorizontal"><hr></div>
+                    </section>
+                </div>
+            </div>
+
+            <div class="season-wrapper">
+                <h2><%= serija.status === 'Ended' ? 'Last Season' : 'Current Season' %></h2>
+                <div class="season-content">
+                    <div class="season-card">
+                        <a href="/serija/<%= serija.id %>/season/<%= lastSeason.season_number %>">
+                            <img class="season-poster" src="<%= lastSeason.poster_path ? `https://image.tmdb.org/t/p/w200${lastSeason.poster_path}` : '/images/placeholder.jpg' %>" alt="Season Poster">
+                        </a>
+                        <div class="season-details">
+                            <div class="season-details-name">
+                                <a href="/serija/<%= serija.id %>/season/<%= lastSeason.season_number %>">
+                                    <h3>Season <%= lastSeason.season_number %></h3>
+                                </a>
+                            </div>
+            
+                            <div class="misc-wrapper tockice">
+                                <div class="tockice-score">
+                                    <span><%= serija.vote_average.toFixed(1) %></span>
+                                </div>
+                                <span><%= lastSeason.air_date?.substr(0, 4) || 'N/A' %></span>
+                                <span><%= lastSeason.episode_count || 'N/A' %> eps</span>
+                            </div>
+                            
+                            <div class="season-details-messages">
+                                <p>
+                                    <% if (lastSeason && lastSeason.air_date) { %>
+                                        Season <%= lastSeason.season_number %> of <%= serija.name %> premiered on <%= new Date(lastSeason.air_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>.
+                                    <% } else { %>
+                                        Information about the current season is not available.
+                                    <% } %>
+                                </p>
+                                
+                                <p class="message-upcoming">
+                                    <% if (upcomingSeason) { %>
+                                        <span style="color: #0d4116; padding-right: 5px;">▶</span>Season <%= upcomingSeason.season_number %> officially confirmed!
+                                    <% } else if (serija.status === 'Ended') { %>
+                                        This is the last and final season.
+                                    <% } else { %>
+                                        No new seasons confirmed.
+                                    <% } %>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <a href="/serija/<%= serija.id %>/seasons" class="view-seasons-link">View All Seasons</a>
+                <hr>
+            </div>            
+            
+            <section class="comments-section">
+                <h2>Reviews</h2>
+                <% if (komentar) { %>
+                    <div class="comment">
+                        <p><strong>Korisnik:</strong> <%= komentar %></p>
+                    </div>
+                <% } else { %>
+                    <p>Još nema recenzija za ovaj film.</p>
+                <% } %>
+            </section>
+        </div>
+
+        <!--<div class="divider"></div>-->
+
+        <div class="recommend-wrapper">
+            <div class="recommend">
+                <h2>Recommendations</h2>
+                <div class="recommend-grid">
+                    <% preporuke.forEach(preporuka => { %>
+                        <div class="recommend-card"
+                            data-image="<%= preporuka.backdrop_path ? 'https://image.tmdb.org/t/p/w780' + preporuka.backdrop_path : '/images/placeholder.jpg' %>">
+                            <a href="/serija/<%= preporuka.id %>">
+                                <div class="poster"></div>
+                                <div class="recommend-naslov">
+                                    <p><%= preporuka.name %></p>
+                                </div>
+                            </a>
+                            <div class="rating">
+                                <% 
+                                    const stars = Math.round(preporuka.vote_average / 2);
+                                    for (let i = 0; i < stars; i++) { 
+                                %>
+                                    <span class="star">&#9733;</span>
+                                <% } %>
+                                <% for (let i = stars; i < 5; i++) { %>
+                                    <span class="star" style="color: gray;">&#9733;</span>
+                                <% } %>
+                                <span class="score"><%= preporuka.vote_average.toFixed(1) %></span>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="blank"></div>
+    
+    <footer>
+        <div class="footer-content">
+            <div class="footer-left">
+                <h2>Moviebase</h2>
+                <p>Your trusted source for entertainment.</p>
+            </div>
+            <div class="footer-middle">
+                <ul>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/terms">Terms of Service</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="footer-right">
+                <p>&copy; 2024 Moviebase. All rights reserved.</p>
+                <p>Follow us:</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function getScoreColor(score) {
+            if (!score || isNaN(score)) return 'grey';
+            const red = Math.min(255, Math.max(0, 255 - Math.round((score / 10) * 255)));
+            const green = Math.min(255, Math.max(0, Math.round((score / 10) * 255)));
+            return `rgb(${red}, ${green}, 0)`;
+        }
+
+        function playTrailer() {
+            const trailerKey = '<%= serija.videos && serija.videos.results ? serija.videos.results.find(video => video.type === "Trailer")?.key : null %>';
+            if (trailerKey) {
+                const modal = document.getElementById('trailer-modal');
+                const iframe = document.getElementById('trailer-video');
+                iframe.src = `https://www.youtube.com/embed/${trailerKey}`;
+                modal.style.display = 'flex';
+            } else {
+                console.warn("Trailer nije pronađen za ovu seriju.");
+            }
+        }
+
+        function closeTrailer() {
+            const modal = document.getElementById('trailer-modal');
+            const iframe = document.getElementById('trailer-video');
+            iframe.src = '';
+            modal.style.display = 'none';
+        }
+
+        document.getElementById("favorite-btn").addEventListener("click", function () {
+            const icon = this.querySelector("i");
+            if (icon.classList.contains("far")) {
+                icon.classList.remove("far");
+                icon.classList.add("fas");
+                icon.style.color = "red";
+            } else {
+                icon.classList.remove("fas");
+                icon.classList.add("far");
+                icon.style.color = "white";
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const recommendCards = document.querySelectorAll(".recommend-card");
+            recommendCards.forEach(card => {
+                const imageUrl = card.getAttribute("data-image");
+                if (imageUrl) {
+                    card.querySelector(".poster").style.backgroundImage = `url('${imageUrl}')`;
+                }
+            });
+        });
+    </script>
 </body>
 </html>

@@ -1,0 +1,22 @@
+.seasons-content{
+    margin: 20px 0;
+    padding: 0 20px 0 0;
+    background-color: #fbfbfb;
+    border-radius: 10px;
+    border: 1px;
+    border-style: solid;
+    border-color: lightgrey;
+    border-left-width: 0;
+}
+
+.seasons-content h3{
+    padding: 0 0 10px 0;
+}
+
+.misc-wrapper{
+    display: flex;
+}
+
+a{
+    text-decoration: none;
+}

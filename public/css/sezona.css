@@ -1,0 +1,187 @@
+.episodes-wrapper {
+    padding: 20px 30px 30px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.episode-content {
+    margin: 0;
+    background-color: #fbfbfb;
+    border-radius: 10px;
+    border: 1px solid lightgrey;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.episode-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    border-bottom: 1px solid lightgrey;
+    border-bottom-left-radius: 10px;
+}
+
+.episode-poster {
+    max-width: 300px;
+    min-width: 250px;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.episode-details {
+    flex: 1;
+    font-size: 14px;
+    color: #333;
+    padding-right: 10px;
+}
+
+.episode-details-name h2 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #0d4116;
+    padding: 10px 0;
+}
+
+.episode-wrapper h3 {
+    font-size: x-large;
+    color: #0d4116;
+    margin: 0;
+}
+
+.episode-details p {
+    margin: 5px 0;
+}
+
+.tockice {
+    padding: 0 0 15px 0;
+    line-height: 2rem;
+}
+
+.tockice span {
+    letter-spacing: 0.5px;
+}
+
+.tockice-score {
+    background-color: #0d4116;
+    color: white;
+}
+
+.tockice-score span {
+    padding: 5px;
+}
+
+.tockice span:not(:first-child) {
+    padding-left: 5px;
+}
+
+.tockice span:not(:first-child)::before {
+    content: "•";
+    margin-right: 5px;
+    color: #0d4116;
+}
+
+.back-to-seasons {
+    display: inline-block;
+    color: #0d4116;
+    text-decoration: none;
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+.back-to-seasons:hover {
+    text-decoration: underline;
+}
+
+.show-more-wrapper{
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    border-bottom: 1px solid lightgrey;
+}
+
+.show-more {
+    margin: 0 0 10px 0;
+    background: none;
+    border: 1px solid #0d4116;
+    border-radius: 5px;
+    color: #0d4116;
+    cursor: pointer;
+    font-size: 0.9em;
+    padding: 5px 10px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.show-more:hover {
+    background-color: #0d4116;
+    color: white;
+}
+
+.hidden {
+    display: none;
+}
+
+.episode-cast {
+    position: relative;
+    margin-top: 10px;
+}
+
+.episode-cast p{
+    padding-left: 20px;
+}
+
+.episode-cast h3{
+    padding-left: 20px;
+}
+
+.cast-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+    justify-content: start;
+    padding: 0 0 10px 10px;
+}
+
+.cast-card {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    width: 90px;
+}
+
+.cast-card img {
+    width: 75px;
+    height: 75px;
+    border-radius: 25%;
+    object-fit: cover;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.cast-name {
+    margin-top: 10px;
+    font-size: 0.85em;
+    font-weight: bold;
+    color: #0d4116;
+}
+
+.cast-character {
+    font-size: 0.75em;
+    color: grey;
+    margin-top: 2px;
+}
+
+.full-cast-link{
+    text-align: right;
+    padding: 0 10px 10px 0;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.full-cast-link a{
+    text-decoration: none;
+    font-size: small;
+}

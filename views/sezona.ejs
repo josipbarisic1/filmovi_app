@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="hr">
+
+<script>
+    const season = {
+        id: "<%= season.id %>",
+        season_number: "<%= season.season_number %>"
+    };
+</script>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title><%= serija.title %> - Detalji</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lazysizes/5.3.2/lazysizes.min.js" async></script>
+
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/film.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap">
+    <link rel="stylesheet" href="/css/serija.css">
+    <link rel="stylesheet" href="/css/sezona.css">
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="header-left">
+                <ul class="header-left-list">
+                    <li>
+                        <a href="/" class="logo">
+                            <img src="/images/MBlogo.png" width="30" height="30" alt="Logo" class="logo-img">
+                            <h4>MovieBase</h4>
+                        </a>
+                    </li>
+                    <li><a href="/pretrazi?category=movie">Movies</a></li>
+                    <li><a href="/pretrazi?category=tv">TV Shows</a></li>
+                    <li><a href="/pretrazi?category=person">People</a></li>
+                    <li><a href="#">More</a></li>
+                </ul>
+            </div>
+
+            <div class="header-right">
+                <ul class="header-right-list">
+                    <li><a href="/" class="logo">Login</a></li>
+                    <li>
+                        <a href="/pretrazi?category=movie">
+                            <i class="fas fa-search"></i>Search
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <div class="season-page-wrapper">
+        <div class="season-header">
+            <h1>
+                Season <%= season.season_number %> <span>(<%= season.air_date?.substr(0, 4) || 'N/A' %>)</span>
+            </h1>
+            <a href="/serija/<%= serija.id %>/seasons" class="back-to-seasons">
+                <span style="color: white; padding-right: 5px;">◀</span> Back to seasons list
+            </a>
+        </div>
+
+        <div class="episodes-wrapper">
+            <% season.episodes.forEach(episode => { %>
+                <div class="episode-content">
+                    <div class="episode-card">
+                        <img class="episode-poster lazyload" data-src="<%= episode.still_path ? `https://image.tmdb.org/t/p/w300${episode.still_path}` : '/images/placeholder.jpg' %>" alt="Episode Poster">
+                        <div class="episode-details">
+                            <div class="episode-details-name">
+                                <h2>Ep <%= episode.episode_number %>: <%= episode.name %></h2>
+                            </div>
+                            <div class="misc-wrapper tockice">
+                                <div class="tockice-score">
+                                    <span><%= episode.vote_average.toFixed(1) %></span>
+                                </div>
+                                <span><%= new Date(episode.air_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) || 'N/A' %></span>
+                                <span><%= episode.runtime || 'N/A' %> mins</span>
+                            </div>
+                            <p class="episode-overview"><%= episode.overview || 'No overview available.' %></p>
+                        </div>
+                    </div>
+
+                    <div class="episode-cast-wrapper">
+                        <div class="show-more-wrapper">
+                            <button class="show-more" 
+                                    data-series-id="<%= serija.id %>" 
+                                    data-season-number="<%= season.season_number %>" 
+                                    data-episode-number="<%= episode.episode_number %>">
+                                Show Cast
+                            </button>
+                        </div>
+
+                        <div class="episode-cast hidden">
+                            <h3>Guest Stars</h3>
+                            <% if (episode.credits && episode.credits.guest_stars && episode.credits.guest_stars.length > 0) { %>
+                                <div class="cast-grid">
+                                    <% episode.credits.guest_stars.slice(0, 10).forEach(actor => { %>
+                                        <div class="cast-card">
+                                            <a href="/osoba/<%= actor.id %>">
+                                                <img src="<%= actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholderPerson.jpg' %>" alt="<%= actor.name %>">
+                                            </a>
+                                            <p class="cast-name"><strong><%= actor.name %></strong></p>
+                                            <p class="cast-character"><%= actor.character || 'Unknown character' %></p>
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            <% } else { %>
+                                <p>No guest stars available for this episode.</p>
+                            <% } %>
+
+                            <div class="full-cast-link">
+                                <a href="/serija/<%= serija.id %>/sezona/<%= season.season_number %>/epizoda/<%= episode.episode_number %>/cast" class="episode-link">
+                                    Full Cast & Crew
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const buttons = document.querySelectorAll(".show-more");
+
+            buttons.forEach(button => {
+                button.addEventListener("click", async () => {
+                    const castSection = button.closest(".episode-cast-wrapper").querySelector(".episode-cast");
+                    if (!castSection) {
+                        console.error("Cast section not found for the clicked button.");
+                        return;
+                    }
+
+                    if (!castSection.classList.contains("hidden") && castSection.dataset.loaded === "true") {
+                        castSection.classList.add("hidden");
+                        button.textContent = "Show Cast";
+                        return;
+                    }
+
+                    const { seriesId, seasonNumber, episodeNumber } = button.dataset;
+
+                    try {
+                        const response = await fetch(`/api/episode/${seriesId}/season/${seasonNumber}/episode/${episodeNumber}`);
+                        const data = await response.json();
+
+                        if (data.guest_stars && data.guest_stars.length > 0) {
+                            let castGrid = castSection.querySelector(".cast-grid");
+                            if (!castGrid) {
+                                castGrid = document.createElement('div');
+                                castGrid.classList.add('cast-grid');
+                                castSection.appendChild(castGrid);
+                            }
+
+                            castSection.querySelector('p')?.remove(); 
+
+                            castGrid.innerHTML = data.guest_stars
+                                .slice(0, 10)
+                                .map(actor => `
+                                    <div class="cast-card">
+                                        <a href="/osoba/${actor.id}">
+                                            <img src="${actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholderPerson.jpg'}" alt="${actor.name}">
+                                        </a>
+                                        <p class="cast-name"><strong>${actor.name}</strong></p>
+                                        <p class="cast-character">${actor.character || 'Unknown character'}</p>
+                                    </div>
+                                `).join("");
+                        } else {
+                            castSection.innerHTML = "<p>No guest stars available for this episode.</p>";
+                        }
+
+                        castSection.dataset.loaded = "true";
+                        castSection.classList.remove("hidden");
+                        button.textContent = "Hide Cast";
+                    } catch (error) {
+                        console.error("Failed to load guest stars:", error);
+                        castSection.innerHTML = "<p>Failed to load guest stars. Please try again later.</p>";
+                    }
+                });
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const scrollPosition = localStorage.getItem("scrollPosition");
+            if (scrollPosition) {
+                window.scrollTo(0, parseInt(scrollPosition, 10));
+                localStorage.removeItem("scrollPosition");
+            }
+        });
+
+        const episodeLinks = document.querySelectorAll(".episode-link");
+        episodeLinks.forEach(link => {
+            link.addEventListener("click", () => {
+                localStorage.setItem("scrollPosition", window.scrollY);
+            });
+        });
+    </script>
+</body>
+</html>

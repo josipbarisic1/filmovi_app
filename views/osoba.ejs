@@ -10,17 +10,106 @@
 <body>
     <header>
         <nav>
-            <h1><a href="/" class="logo">Filmska baza</a></h1>
+            <div class="header-left">
+                <ul class="header-left-list">
+                    <li>
+                        <a href="/" class="logo">
+                            <img src="/images/MBlogo.png" width="30" height="30" alt="Logo" class="logo-img">
+                            <h4>MovieBase</h4>
+                        </a>
+                    </li>                    
+                    <li><a href="/pretrazi?category=movie">Movies</a></li>
+                    <li><a href="/pretrazi?category=tv">TV Shows</a></li>
+                    <li><a href="/pretrazi?category=person">People</a></li>
+                    <li><a href="#">More</a></li>
+                </ul>
+            </div>
+
+            <div class="header-right">
+                <ul class="header-right-list">
+                    <li><a href="/" class="logo">Login</a></li>
+                    <li>
+                        <a href="/pretrazi?category=movie">
+                            <i class="fas fa-search"></i>Search
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </nav>
     </header>
-    <div class="osoba-details">
-        <h1><%= osoba.name %></h1>
-        <img src="<%= osoba.profile_path ? `https://image.tmdb.org/t/p/w300${osoba.profile_path}` : '/images/placeholderPerson.jpg' %>" alt="Slika za <%= osoba.name %>">
-        <p><strong>Biografija:</strong> <%= osoba.biography %></p>
-        <p><strong>Datum rođenja:</strong> <%= osoba.birthday %></p>
-        <% if (osoba.deathday) { %>
-            <p><strong>Datum smrti:</strong> <%= osoba.deathday %></p>
+
+    <div class="person-header">
+        <img src="<%= osoba.profile_path ? `https://image.tmdb.org/t/p/w300${osoba.profile_path}` : '/images/placeholder.jpg' %>" alt="<%= osoba.name %>">
+        <div class="person-info">
+            <h1><%= osoba.name %></h1>
+            <p><strong>Born:</strong> <%= osoba.birthday || 'N/A' %></p>
+            <p><strong>Place of Birth:</strong> <%= osoba.place_of_birth || 'N/A' %></p>
+            <p><strong>Biography:</strong></p>
+            <p><%= osoba.biography || 'Biography not available.' %></p>
+        </div>
+    </div>
+
+    <div class="known-for-wrapper">
+        <h2>Known For</h2>
+        <% if (osoba.known_for?.length > 0) { %>
+            <div class="known-for-grid">
+                <% osoba.known_for.forEach(project => { %>
+                    <div class="known-for-card">
+                        <a href="<%= project.media_type === 'movie' ? `/film/${project.id}` : `/serija/${project.id}` %>">
+                            <img src="<%= project.poster_path ? `https://image.tmdb.org/t/p/w200${project.poster_path}` : '/images/placeholder.jpg' %>" alt="<%= project.title || project.name %>">
+                            <p><%= project.title || project.name %></p>
+                        </a>
+                    </div>
+                <% }) %>
+            </div>
+        <% } else { %>
+            <p>No information available.</p>
         <% } %>
     </div>
+    
+
+    <div class="filmography-wrapper">
+        <h2>Filmography</h2>
+        <% if (osoba.combined_credits?.cast?.length > 0) { %>
+            <ul>
+                <% osoba.combined_credits.cast.forEach(credit => { %>
+                    <li>
+                        <a href="<%= credit.media_type === 'movie' ? `/film/${credit.id}` : `/serija/${credit.id}` %>">
+                            <%= credit.title || credit.name %> (<%= credit.release_date || credit.first_air_date || 'N/A' %>)
+                        </a>
+                        as <%= credit.character || 'N/A' %>
+                    </li>
+                <% }) %>
+            </ul>
+        <% } else { %>
+            <p>Filmography not available.</p>
+        <% } %>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div class="footer-left">
+                <h2>Moviebase</h2>
+                <p>Your trusted source for entertainment.</p>
+            </div>
+            <div class="footer-middle">
+                <ul>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/terms">Terms of Service</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="footer-right">
+                <p>&copy; 2024 Moviebase. All rights reserved.</p>
+                <p>Follow us:</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

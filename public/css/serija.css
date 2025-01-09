@@ -1,0 +1,115 @@
+.cast-season-wrapper{
+    min-width: 0;
+    flex: 1;
+    box-shadow: 1px 0px #888888;
+}
+
+.content-wrapper{
+    padding-bottom: 0;
+}
+
+.hrHorizontal{
+    padding: 20px 0 0 20px;
+}
+
+.season-wrapper{
+    padding: 0 30px 30px 40px;
+}
+
+.season-content {
+    margin: 0;
+    padding: 0 20px 0 0;
+    background-color: #fbfbfb;
+    border-radius: 10px;
+
+    border: 1px;
+    border-style: solid;
+    border-color: lightgrey;
+    border-left-width: 0;
+}
+
+.season-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.season-poster {
+    width: 130px;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    min-width: 100px;
+    display: block;
+}
+
+.season-details {
+    flex: 1;
+    font-size: 14px;
+    color: #333;
+}
+
+.season-wrapper h2 {
+    padding-left: 10px;
+}
+
+.season-details-name{
+    padding-top: 20px;
+}
+
+.season-wrapper a{
+    text-decoration: none;
+}
+
+.season-wrapper h3 {
+    font-size: x-large;
+    color: #0d4116;
+    margin: 0;
+}
+
+.season-details p {
+    margin: 5px 0;
+}
+
+.tockice{
+    padding: 0 0 20px 0;
+    line-height: 2rem;
+}
+
+.tockice span{
+    letter-spacing: 0.5px;
+}
+
+.tockice-score{
+    background-color: #0d4116;
+    color: white;
+}
+
+.tockice-score span{
+    padding: 5px;
+}
+
+.tockice span:not(:first-child){
+    padding-left: 5px;
+}
+
+.tockice span:not(:first-child)::before {
+    content: "•";
+    margin-right: 0px;
+    color: #0d4116;
+}
+
+.message-upcoming{
+    padding-top: 10px;
+}
+
+.view-seasons-link {
+    display: inline-block;
+    padding: 5px 10px 10px 5px;
+    margin-top: 25px;
+    margin-bottom: 5px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bolder;
+}
+
