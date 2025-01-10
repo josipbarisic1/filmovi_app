@@ -1,3 +1,19 @@
+.film-cast h2, .film-crew h2{
+    padding: 20px 0 20px 15px;
+    background-color: #cdd9b8;
+    margin-top: 0;
+    border-top: 2px solid darkolivegreen;
+    margin-bottom: 5px;
+}
+
+.film-cast h3, .film-crew h3{
+    padding: 10px 0 10px 25px;
+    background-color: #d1d1d1;
+    margin: 0;
+    border-top: 1px solid white;
+    border-left: 5px solid black;
+}
+
 .cast-grid, .crew-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(90px, 110px));

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= mediaType === 'movie' ? 'Glumci i ekipa filma' : 'Glumci i ekipa serije' %></title>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/film_glumci.css">
+    <link rel="stylesheet" href="/css/glumci.css">
 </head>
 <body>
     <header>
@@ -38,9 +38,9 @@
         </nav>
     </header>
 
-    <div>
+    <div class="season-header">
         <h1>
-            <%= filmTitle || 'Title unavailable' %> (<%= releaseYear || 'N/A' %>)
+            <%= filmTitle || 'Title unavailable' %> <span>(<%= releaseYear || 'N/A' %>)</span>
         </h1>
         <a href="<%= mediaType === 'movie' ? `/film/${mediaId}` : `/serija/${mediaId}` %>" class="back-to-main">
             <span style="color: white; padding-right: 5px;">◀</span> Back to main

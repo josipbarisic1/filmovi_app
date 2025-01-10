@@ -227,26 +227,22 @@
                             <a href="/serija/<%= preporuka.id %>">
                                 <div class="poster"></div>
                                 <div class="recommend-naslov">
-                                    <p><%= preporuka.name %></p>
+                                    <p>
+                                        <%= preporuka.name %> (<%= preporuka.first_air_date ? preporuka.first_air_date.substr(0, 4) : 'N/A' %>)
+                                    </p>
+                                    <div class="flex-align-center">
+                                        <span class="recommend-score">
+                                            <%= preporuka.vote_average.toFixed(1) %>
+                                        </span>
+                                    </div>
+                                    
                                 </div>
                             </a>
-                            <div class="rating">
-                                <% 
-                                    const stars = Math.round(preporuka.vote_average / 2);
-                                    for (let i = 0; i < stars; i++) { 
-                                %>
-                                    <span class="star">&#9733;</span>
-                                <% } %>
-                                <% for (let i = stars; i < 5; i++) { %>
-                                    <span class="star" style="color: gray;">&#9733;</span>
-                                <% } %>
-                                <span class="score"><%= preporuka.vote_average.toFixed(1) %></span>
-                            </div>
                         </div>
                     <% }) %>
                 </div>
             </div>
-        </div>
+        </div>        
     </div>
 
     <div class="blank"></div>

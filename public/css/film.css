@@ -321,7 +321,7 @@ body {
 
 
 .recommend-wrapper {
-    flex: 1; 
+    flex: 1;
     max-width: 250px;
     padding: 10px;
 }
@@ -361,15 +361,6 @@ body {
     border-top-left-radius: 5px;
 }
 
-
-.recommend-card img {
-    width: 100%;
-    aspect-ratio: 16 / 9; 
-    object-fit: cover;
-    border-radius: 8px; 
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
 .recommend-card p {
     font-size: 0.9rem;
     color: white;
@@ -381,39 +372,46 @@ body {
 .recommend-card a {
     width: 100%;
     cursor: pointer;
+    text-decoration: none;
 }
 
-.recommend-naslov{
+.recommend-naslov {
     background-color: #454545;
     width: 100%;
     border-bottom-right-radius: 5px;
     border-bottom-left-radius: 5px;
     border-top: 1px solid white;
-}
-
-.recommend-card .rating {
     display: flex;
-    align-items: center;
-    gap: 5px;
+    justify-content: space-between;
+    align-items: stretch; /* Promijenjeno s "center" na "stretch" */
+}
+
+.recommend-naslov p {
+    margin: 0;
     font-size: 0.9rem;
-    color: gold;
+    color: white;
+    padding: 5px 10px; /* Dodan padding */
+    word-break: break-word; /* Spriječava preduge riječi */
+    flex: 1; /* Omogućuje fleksibilno rastezanje */
+}
+
+.flex-align-center {
+    background-color: #0d4116;
+    border-left: 1px solid white;
+    align-content: center;
+}
+
+.recommend-score {
+    color: white;
+    font-weight: bold;
+    font-size: 0.95rem;
     padding: 5px 10px;
-    text-align: left;
+    background-color: #0d4116;
+    display: flex;
+    align-items: center; /* Centrirano vertikalno */
 }
 
-.recommend-card .rating .star {
-    color: gold;
-    font-size: 1rem; 
-}
 
-.recommend-card .rating .score {
-    color: #000000;
-    border: 2px solid gold;
-    padding: 5px 12px;
-    border-radius: 25px;
-    font-size: large;
-    letter-spacing: 1px;
-}
 
 .modal {
     display: none;
