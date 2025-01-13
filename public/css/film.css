@@ -237,6 +237,7 @@ body {
     font-size: 1.75rem;
 }
 
+/* CAST */
 .cast-scroll-wrapper {
     overflow-x: auto; 
     white-space: nowrap;
@@ -319,7 +320,57 @@ body {
     box-shadow: 1px 0px #888888;
 }
 
+/* COMMENTS */
+.comments-section {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #222;
+    border-radius: 8px;
+}
 
+.comments-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+.comment-card {
+    background-color: #333;
+    padding: 10px;
+    border-radius: 8px;
+    color: white;
+}
+
+.comment-card p {
+    margin: 5px 0;
+}
+
+.comment-card .rating {
+    font-weight: bold;
+    color: #0d4116;
+}
+
+.comment-card .date {
+    font-size: 0.8rem;
+    color: #aaa;
+}
+
+.comments-section button {
+    display: block;
+    margin: 20px auto;
+    padding: 10px 15px;
+    background-color: #0d4116;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.comments-section button:hover {
+    background-color: #09632e;
+}
+
+/* RECOMMEND */
 .recommend-wrapper {
     flex: 1;
     max-width: 250px;
@@ -383,16 +434,16 @@ body {
     border-top: 1px solid white;
     display: flex;
     justify-content: space-between;
-    align-items: stretch; /* Promijenjeno s "center" na "stretch" */
+    align-items: stretch;
 }
 
 .recommend-naslov p {
     margin: 0;
     font-size: 0.9rem;
     color: white;
-    padding: 5px 10px; /* Dodan padding */
-    word-break: break-word; /* Spriječava preduge riječi */
-    flex: 1; /* Omogućuje fleksibilno rastezanje */
+    padding: 5px 10px;
+    word-break: break-word;
+    flex: 1;
 }
 
 .flex-align-center {
@@ -408,11 +459,11 @@ body {
     padding: 5px 10px;
     background-color: #0d4116;
     display: flex;
-    align-items: center; /* Centrirano vertikalno */
+    align-items: center;
 }
 
 
-
+/* MODAL */
 .modal {
     display: none;
     position: fixed;

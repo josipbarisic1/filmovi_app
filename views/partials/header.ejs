@@ -1,0 +1,42 @@
+
+<head>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<header>
+    <nav>
+        <div class="header-left">
+            <ul class="header-left-list">
+                <li>
+                    <a href="/" class="logo">
+                        <img src="/images/MBlogo.png" width="30" height="30" alt="Logo" class="logo-img">
+                        <h4>MovieBase</h4>
+                    </a>
+                </li>                    
+                <li><a href="/pretrazi?category=movie">Movies</a></li>
+                <li><a href="/pretrazi?category=tv">TV Shows</a></li>
+                <li><a href="/pretrazi?category=person">People</a></li>
+                <li><a href="#">More</a></li>
+            </ul>
+        </div>
+
+        <div class="header-right">
+            <ul class="header-right-list">
+                <% if (!session.username) { %>
+                    <li><a href="/login">Login</a></li>
+                <% } else { %>
+                    <li><a href="/profile"><%= session.username %></a></li>
+                    <% if (session.role === 'admin') { %>
+                        <li><a href="/admin">Admin Panel</a></li>
+                    <% } %>
+                    <li><a href="/logout">Logout</a></li>
+                <% } %>
+                <li>
+                    <a href="/pretrazi?category=movie">
+                        <i class="fas fa-search"></i>Search
+                    </a>
+                </li>
+            </ul>
+        </div>            
+    </nav>
+</header>

@@ -8,35 +8,7 @@
     <link rel="stylesheet" href="/css/osoba.css">
 </head>
 <body>
-    <header>
-        <nav>
-            <div class="header-left">
-                <ul class="header-left-list">
-                    <li>
-                        <a href="/" class="logo">
-                            <img src="/images/MBlogo.png" width="30" height="30" alt="Logo" class="logo-img">
-                            <h4>MovieBase</h4>
-                        </a>
-                    </li>                    
-                    <li><a href="/pretrazi?category=movie">Movies</a></li>
-                    <li><a href="/pretrazi?category=tv">TV Shows</a></li>
-                    <li><a href="/pretrazi?category=person">People</a></li>
-                    <li><a href="#">More</a></li>
-                </ul>
-            </div>
-
-            <div class="header-right">
-                <ul class="header-right-list">
-                    <li><a href="/" class="logo">Login</a></li>
-                    <li>
-                        <a href="/pretrazi?category=movie">
-                            <i class="fas fa-search"></i>Search
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </nav>
-    </header>
+    <%- include('partials/header') %>
 
     <div class="person-header">
         <img src="<%= osoba.profile_path ? `https://image.tmdb.org/t/p/w300${osoba.profile_path}` : '/images/placeholder.jpg' %>" alt="<%= osoba.name %>">
@@ -86,30 +58,7 @@
         <% } %>
     </div>
     
-    <footer>
-        <div class="footer-content">
-            <div class="footer-left">
-                <h2>Moviebase</h2>
-                <p>Your trusted source for entertainment.</p>
-            </div>
-            <div class="footer-middle">
-                <ul>
-                    <li><a href="/about">About Us</a></li>
-                    <li><a href="/contact">Contact</a></li>
-                    <li><a href="/terms">Terms of Service</a></li>
-                    <li><a href="/privacy">Privacy Policy</a></li>
-                </ul>
-            </div>
-            <div class="footer-right">
-                <p>&copy; 2024 Moviebase. All rights reserved.</p>
-                <p>Follow us:</p>
-                <div class="social-icons">
-                    <a href="#"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#"><i class="fab fa-twitter"></i></a>
-                    <a href="#"><i class="fab fa-instagram"></i></a>
-                </div>
-            </div>
-        </div>
-    </footer>
+    <%- include('partials/footer') %>
+
 </body>
 </html>

@@ -8,17 +8,7 @@
     <link rel="stylesheet" href="/css/index.css">
 </head>
 <body>
-    <header>
-        <h1>Filmska baza</h1>
-        <nav>
-            <ul>
-                <li><a href="/pretrazi?category=movie">Filmovi</a></li>
-                <li><a href="/pretrazi?category=tv">Serije</a></li>
-                <li><a href="/pretrazi?category=person">Glumci</a></li>
-                <li><a href="#">Više</a></li>
-            </ul>
-        </nav>
-    </header>
+    <%- include('partials/header') %>
 
     <section class="search-section">
         <form action="/pretrazi" method="post">
@@ -34,5 +24,8 @@
             </div>
         </form>
     </section>
+
+    <%- include('partials/footer') %>
+
 </body>
 </html>
