@@ -4,6 +4,8 @@ const axios = require('axios');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
+const mysql = require('mysql');
+
 
 const app = express();
 const port = 3000;
@@ -29,7 +31,6 @@ app.use(session({
     cookie: { secure: false }, // HTTPS - true
 }));
 app.use((req, res, next) => {
-    console.log(req.session);
     res.locals.session = req.session || {};
     next();
 });
@@ -102,7 +103,7 @@ app.get('/test', (req, res) => {
 
 
 app.post('/register', async (req, res) => {
-    const { username, email_address, age, phone_number, gender, password } = req.body;
+    const { username, email_address, age, phone_number, gender, password, nadimak } = req.body;
 
     const mysql = require('mysql');
     const connection = mysql.createConnection({
@@ -118,9 +119,9 @@ app.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         connection.query(
-            `INSERT INTO korisnici (username, email_address, age, phone_number, gender, password, role, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, 'user', NOW())`,
-            [username, email_address, age, phone_number, gender, hashedPassword],
+            `INSERT INTO korisnici (username, email_address, age, phone_number, gender, password, nadimak, role, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'user', NOW())`,
+            [username, email_address, age, phone_number, gender, hashedPassword, nadimak || null],
             (error, results) => {
                 connection.end();
                 if (error) {
@@ -135,6 +136,7 @@ app.post('/register', async (req, res) => {
         res.status(500).send('Greška na serveru.');
     }
 });
+
 
 
 app.get('/register', (req, res) => {
@@ -356,7 +358,7 @@ app.get('/film/:id', async (req, res) => {
         connection.connect();
 
         connection.query(
-            `SELECT k.tekst, k.ocjena, k.datum, korisnici.username 
+            `SELECT k.tekst, k.ocjena, k.datum, korisnici.nadimak 
             FROM komentari k 
             LEFT JOIN korisnici ON k.korisnik_id = korisnici.id
             WHERE k.film_id = ? 
@@ -386,6 +388,7 @@ app.get('/film/:id', async (req, res) => {
                         preporuke,
                         userScoreColor,
                         tmdbScoreColor,
+                        filmId,
                     });
                 }
             }
@@ -441,6 +444,7 @@ app.get('/serija/:id', async (req, res) => {
     const serijaId = req.params.id;
 
     const serijaUrl = `https://api.themoviedb.org/3/tv/${serijaId}?api_key=${apiKey}&append_to_response=videos,credits,recommendations`;
+
     try {
         const response = await axios.get(serijaUrl);
         const serija = response.data;
@@ -464,10 +468,10 @@ app.get('/serija/:id', async (req, res) => {
         connection.connect();
 
         connection.query(
-            `SELECT k.tekst, k.ocjena, k.datum, korisnici.username 
+            `SELECT k.tekst, k.ocjena, k.datum, korisnici.nadimak 
             FROM komentari k 
             LEFT JOIN korisnici ON k.korisnik_id = korisnici.id
-            WHERE k.film_id = ? 
+            WHERE k.serija_id = ? 
             ORDER BY k.datum DESC 
             LIMIT 3`,
             [serijaId],
@@ -494,6 +498,7 @@ app.get('/serija/:id', async (req, res) => {
                         preporuke,
                         userScoreColor,
                         tmdbScoreColor,
+                        serijaId,
                     });
                 }
             }
@@ -632,9 +637,15 @@ app.get('/serija/:serijaId/sezona/:sezonaId/epizoda/:epizodaId/cast', async (req
     }
 });
 
-app.post('/komentar/:id', (req, res) => {
+app.post('/dodaj-komentar', (req, res) => {
+    const { tekst, ocjena, filmId, serijaId, tip } = req.body;
+    const korisnikId = req.session.userId;
+
+    if (!korisnikId) {
+        return res.status(401).send('You must be logged in to post a review.');
+    }
+
     const mysql = require('mysql');
-    const bcrypt = require('bcrypt');
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
@@ -642,28 +653,31 @@ app.post('/komentar/:id', (req, res) => {
         database: process.env.DB_NAME,
     });
 
-    const filmId = req.params.id;
-    const { korisnikId, tekst, ocjena } = req.body;
-
     connection.connect();
 
-    const sql = `
-        INSERT INTO komentari (film_id, korisnik_id, tekst, ocjena) 
-        VALUES (?, ?, ?, ?)`;
+    const query = `
+        INSERT INTO komentari (tekst, ocjena, datum, korisnik_id, film_id, serija_id)
+        VALUES (?, ?, NOW(), ?, ?, ?)
+    `;
 
-    connection.query(sql, [filmId, korisnikId, tekst, ocjena], (error, results) => {
+    connection.query(query, [tekst, ocjena, korisnikId, filmId || null, serijaId || null], (error) => {
         if (error) {
-            console.error('Greška prilikom dodavanja komentara:', error);
-            res.status(500).send('Greška prilikom dodavanja komentara.');
-        } else {
-            res.send('Komentar je uspješno dodan!');
+            console.error('Error adding comment:', error);
+            return res.status(500).send('Error adding comment.');
         }
+        res.redirect(filmId ? `/film/${filmId}` : `/serija/${serijaId}`);
     });
 
     connection.end();
 });
 
-app.get('/komentari/:id', (req, res) => {
+
+app.get('/komentari/:tip/:id', (req, res) => {
+    console.log(`Fetching comments for ${req.params.tip} with ID ${req.params.id}`);
+
+    const { tip, id } = req.params;
+    const column = tip === 'film' ? 'film_id' : 'serija_id';
+
     const mysql = require('mysql');
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
@@ -674,26 +688,87 @@ app.get('/komentari/:id', (req, res) => {
 
     connection.connect();
 
-    const filmId = req.params.id;
-    const sql = `
-        SELECT k.tekst, k.ocjena, k.datum, korisnici.username 
+    const query = `
+        SELECT k.tekst, k.ocjena, k.datum, 
+            COALESCE(korisnici.nadimak, 'Guest') AS nadimak
         FROM komentari k 
         LEFT JOIN korisnici ON k.korisnik_id = korisnici.id
-        WHERE k.film_id = ? 
-        ORDER BY k.datum DESC 
-        LIMIT 3`;
+        WHERE k.${column} = ?
+        ORDER BY k.datum DESC
+        LIMIT 3
 
-    connection.query(sql, [filmId], (error, results) => {
+    `;
+
+    connection.query(query, [id], (error, results) => {
         if (error) {
-            console.error('Greška prilikom dohvaćanja komentara:', error);
-            res.status(500).send('Greška prilikom dohvaćanja komentara.');
-        } else {
-            res.json(results);
+            console.error('Error fetching comments:', error);
+            return res.status(500).send('Error fetching comments.');
         }
+        console.log('Fetched comments:', results);
+        res.json(results);
     });
 
     connection.end();
 });
+
+app.get('/svi-komentari/:tip/:id', async (req, res) => {
+    const { tip, id } = req.params;
+    const column = tip === 'film' ? 'film_id' : 'serija_id';
+    const apiKey = process.env.TMDB_API_KEY;
+
+    const mediaUrl = tip === 'film'
+        ? `https://api.themoviedb.org/3/movie/${id}?api_key=${apiKey}`
+        : `https://api.themoviedb.org/3/tv/${id}?api_key=${apiKey}`;
+
+    const mysql = require('mysql');
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const komentariQuery = `
+        SELECT k.tekst, k.ocjena, k.datum, korisnici.nadimak
+        FROM komentari k
+        LEFT JOIN korisnici ON k.korisnik_id = korisnici.id
+        WHERE k.${column} = ?
+        ORDER BY k.datum DESC
+    `;
+
+    try {
+        const komentariPromise = new Promise((resolve, reject) => {
+            connection.query(komentariQuery, [id], (error, results) => {
+                if (error) return reject(error);
+                resolve(results);
+            });
+        });
+
+        const mediaPromise = axios.get(mediaUrl);
+
+        const [komentari, mediaResponse] = await Promise.all([komentariPromise, mediaPromise]);
+        const mediaData = mediaResponse.data;
+
+        const filmTitle = tip === 'film' ? mediaData.title : mediaData.name;
+        const releaseYear = (mediaData.release_date || mediaData.first_air_date || '').substr(0, 4);
+
+        res.render('svi_komentari', {
+            komentari,
+            filmTitle: filmTitle || 'Title unavailable',
+            releaseYear: releaseYear || 'N/A',
+            mediaType: tip === 'film' ? 'movie' : 'series',
+            mediaId: id,
+        });
+    } catch (error) {
+        console.error('Greška prilikom dohvaćanja komentara ili podataka o mediju:', error);
+        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
+    } finally {
+        connection.end();
+    }
+});
+
 
 app.get('/osoba/:id', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;

@@ -1,6 +1,7 @@
 
 <head>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
 </head>
 
 <header>
@@ -12,7 +13,7 @@
                         <img src="/images/MBlogo.png" width="30" height="30" alt="Logo" class="logo-img">
                         <h4>MovieBase</h4>
                     </a>
-                </li>                    
+                </li>
                 <li><a href="/pretrazi?category=movie">Movies</a></li>
                 <li><a href="/pretrazi?category=tv">TV Shows</a></li>
                 <li><a href="/pretrazi?category=person">People</a></li>
@@ -25,18 +26,26 @@
                 <% if (!session.username) { %>
                     <li><a href="/login">Login</a></li>
                 <% } else { %>
-                    <li><a href="/profile"><%= session.username %></a></li>
-                    <% if (session.role === 'admin') { %>
-                        <li><a href="/admin">Admin Panel</a></li>
-                    <% } %>
-                    <li><a href="/logout">Logout</a></li>
+                    <li class="dropdown">
+                        <a href="/profile" class="dropdown-toggle">
+                            <%= session.username %> ▼
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/profile">Profile</a></li>
+                            <% if (session.role === 'admin') { %>
+                                <li><a href="/admin">Admin Panel</a></li>
+                            <% } %>
+                            <li><a href="/logout">Logout</a></li>
+                        </ul>
+                    </li>
                 <% } %>
                 <li>
                     <a href="/pretrazi?category=movie">
-                        <i class="fas fa-search"></i>Search
+                        <i class="fas fa-search"></i> Search
                     </a>
                 </li>
             </ul>
-        </div>            
+        </div>
     </nav>
 </header>
+

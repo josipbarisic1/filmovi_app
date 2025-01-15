@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Reviews</title>
+    <link rel="stylesheet" href="/css/komentari.css">
+    <link rel="stylesheet" href="/css/style.css">
+
+</head>
+<body>
+
+    <%- include('partials/header') %>
+
+    <div class="season-header">
+        <h1>
+            <%= filmTitle || 'Title unavailable' %> <span>(<%= releaseYear || 'N/A' %>)</span>
+        </h1>
+        <a href="<%= mediaType === 'movie' ? `/film/${mediaId}` : `/serija/${mediaId}` %>" class="back-to-main">
+            <span style="color: white; padding-right: 5px;">◀</span> Back to main
+        </a>
+    </div>
+
+    <section class="all-comments">
+        <h1>All Reviews</h1>
+        <% if (komentari.length > 0) { %>
+            <% komentari.forEach(komentar => { %>
+                <div class="comment-card">
+                    <p><strong><%= komentar.nadimak ? komentar.nadimak : 'Guest' %>:</strong></p>
+                    <p><%= komentar.tekst %></p>
+                    <p class="rating">Rating: <%= komentar.ocjena %></p>
+                    <p class="date"><%= new Date(komentar.datum).toLocaleString() %></p>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <p>No reviews available.</p>
+        <% } %>
+    </section>
+
+    <%- include('partials/footer') %>
+
+</body>
+</html>

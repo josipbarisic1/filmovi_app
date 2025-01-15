@@ -119,26 +119,8 @@
                     <hr>
                 </div>
 
-                <section class="comments-section">
-                    <h2>Reviews</h2>
-                    <% if (komentari.length > 0) { %>
-                        <div class="comments-grid">
-                            <% komentari.forEach(komentar => { %>
-                                <div class="comment-card">
-                                    <p><strong><%= komentar.username || 'Admin' %>:</strong></p>
-                                    <p><%= komentar.tekst %></p>
-                                    <p class="rating">Rating: <%= komentar.ocjena %></p>
-                                    <p class="date"><%= new Date(komentar.datum).toLocaleDateString() %></p>
-                                </div>
-                            <% }) %>
-                        </div>
-                        <% if (komentari.length === 3) { %>
-                            <button onclick="window.location.href='/svi-komentari/<%= filmId %>'">Read All Reviews</button>
-                        <% } %>
-                    <% } else { %>
-                        <p>No reviews yet. Be the first to add one!</p>
-                    <% } %>
-                </section>                
+                <%- include('partials/comments', { komentari, filmId: film.id, session }) %>
+               
             </div>
         </div>
 
