@@ -32,6 +32,7 @@ app.use(session({
 }));
 app.use((req, res, next) => {
     res.locals.session = req.session || {};
+    res.locals.currentUrl = req.originalUrl;
     next();
 });
 
@@ -143,10 +144,13 @@ app.get('/register', (req, res) => {
     res.render('register', { session: req.session });
 });
 
+app.get('/login', (req, res) => {
+    const redirect = req.query.redirect || req.headers.referer || '/';
+    res.render('login', { session: req.session, redirect });
+});
 app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, redirect } = req.body;
 
-    const mysql = require('mysql');
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
@@ -162,38 +166,33 @@ app.post('/login', async (req, res) => {
         async (error, results) => {
             connection.end();
             if (error || results.length === 0) {
-                console.error('Greška prilikom prijave:', error);
-                return res.status(401).send('Pogrešan username ili lozinka.');
+                console.error('Error during login:', error);
+                return res.status(401).send('Invalid username or password.');
             }
 
             const user = results[0];
-
             try {
                 const passwordMatch = await bcrypt.compare(password, user.password);
                 if (passwordMatch) {
                     req.session.userId = user.id;
                     req.session.username = user.username;
                     req.session.role = user.role;
-                    res.redirect('/');
+                    res.redirect(redirect || '/');
                 } else {
-                    res.status(401).send('Pogrešan username ili lozinka.');
+                    res.status(401).send('Invalid username or password.');
                 }
             } catch (err) {
-                console.error('Greška prilikom provjere lozinke:', err);
-                res.status(500).send('Greška na serveru.');
+                console.error('Password check error:', err);
+                res.status(500).send('Server error.');
             }
         }
     );
 });
 
-
-app.get('/login', (req, res) => {
-    res.render('login', { session: req.session });
-});
-
 app.get('/logout', (req, res) => {
+    const redirect = req.query.redirect || '/';
     req.session.destroy(() => {
-        res.redirect('/');
+        res.redirect(redirect);
     });
 });
 
@@ -358,11 +357,11 @@ app.get('/film/:id', async (req, res) => {
         connection.connect();
 
         connection.query(
-            `SELECT k.tekst, k.ocjena, k.datum, korisnici.nadimak 
+            `SELECT k.tekst, k.ocjena, k.datum, k.korisnik_id, korisnici.nadimak 
             FROM komentari k 
             LEFT JOIN korisnici ON k.korisnik_id = korisnici.id
             WHERE k.film_id = ? 
-            ORDER BY k.datum DESC 
+            ORDER BY k.datum DESC
             LIMIT 3`,
             [filmId],
             (error, results) => {
@@ -370,31 +369,44 @@ app.get('/film/:id', async (req, res) => {
                     console.error('Greška prilikom dohvaćanja komentara:', error);
                     res.status(500).send('Greška prilikom dohvaćanja komentara.');
                 } else {
-                    const userScores = results.map(row => row.ocjena);
-                    const userScore = userScores.length > 0 
-                        ? (userScores.reduce((a, b) => a + b, 0) / userScores.length).toFixed(1) 
-                        : '0';
-        
-                    const userScoreColor = getScoreColor(userScore);
-                    const tmdbScoreColor = getScoreColor(film.vote_average);
-        
-                    res.render('film', {
-                        film,
-                        direktor: director ? director.name : 'N/A',
-                        tmdbRating: film.vote_average.toFixed(1),
-                        userScore,
-                        pgRating,
-                        komentari: results,
-                        preporuke,
-                        userScoreColor,
-                        tmdbScoreColor,
-                        filmId,
-                    });
+                    connection.query(
+                        `SELECT COUNT(*) AS total FROM komentari WHERE film_id = ?`,
+                        [filmId],
+                        (countError, countResults) => {
+                            if (countError) {
+                                console.error('Greška prilikom prebrojavanja komentara:', countError);
+                                res.status(500).send('Greška prilikom prebrojavanja komentara.');
+                            } else {
+                                const totalComments = countResults[0].total;
+
+                                const userScores = results.map(row => row.ocjena);
+                                const userScore = userScores.length > 0 
+                                    ? (userScores.reduce((a, b) => a + b, 0) / userScores.length).toFixed(1) 
+                                    : '0';
+
+                                const userScoreColor = getScoreColor(userScore);
+                                const tmdbScoreColor = getScoreColor(film.vote_average);
+
+                                res.render('film', {
+                                    film,
+                                    direktor: director ? director.name : 'N/A',
+                                    tmdbRating: film.vote_average.toFixed(1),
+                                    userScore,
+                                    pgRating,
+                                    komentari: results,
+                                    ukupnoKomentara: totalComments,
+                                    preporuke,
+                                    userScoreColor,
+                                    tmdbScoreColor,
+                                    filmId,
+                                });
+                            }
+                        }
+                    );
                 }
             }
         );
 
-        connection.end();
     } catch (error) {
         console.error('Došlo je do pogreške prilikom dohvaćanja podataka o filmu:', error);
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka o filmu.');
@@ -468,7 +480,7 @@ app.get('/serija/:id', async (req, res) => {
         connection.connect();
 
         connection.query(
-            `SELECT k.tekst, k.ocjena, k.datum, korisnici.nadimak 
+            `SELECT k.tekst, k.ocjena, k.datum, k.korisnik_id, korisnici.nadimak 
             FROM komentari k 
             LEFT JOIN korisnici ON k.korisnik_id = korisnici.id
             WHERE k.serija_id = ? 
@@ -480,31 +492,44 @@ app.get('/serija/:id', async (req, res) => {
                     console.error('Greška prilikom dohvaćanja komentara za seriju:', error);
                     res.status(500).send('Greška prilikom dohvaćanja komentara za seriju.');
                 } else {
-                    const userScores = results.map(row => row.ocjena);
-                    const userScore = userScores.length > 0 
-                        ? (userScores.reduce((a, b) => a + b, 0) / userScores.length).toFixed(1) 
-                        : '0';
-        
-                    const userScoreColor = getScoreColor(userScore);
-                    const tmdbScoreColor = getScoreColor(serija.vote_average);
-        
-                    res.render('serija', {
-                        serija,
-                        creator,
-                        seasons: serija.seasons,
-                        tmdbRating: serija.vote_average.toFixed(1),
-                        userScore,
-                        komentari: results,
-                        preporuke,
-                        userScoreColor,
-                        tmdbScoreColor,
-                        serijaId,
-                    });
+                    connection.query(
+                        `SELECT COUNT(*) AS total FROM komentari WHERE serija_id = ?`,
+                        [serijaId],
+                        (countError, countResults) => {
+                            if (countError) {
+                                console.error('Greška prilikom prebrojavanja komentara:', countError);
+                                res.status(500).send('Greška prilikom prebrojavanja komentara.');
+                            } else {
+                                const totalComments = countResults[0].total;
+
+                                const userScores = results.map(row => row.ocjena);
+                                const userScore = userScores.length > 0 
+                                    ? (userScores.reduce((a, b) => a + b, 0) / userScores.length).toFixed(1) 
+                                    : '0';
+
+                                const userScoreColor = getScoreColor(userScore);
+                                const tmdbScoreColor = getScoreColor(serija.vote_average);
+
+                                res.render('serija', {
+                                    serija,
+                                    creator,
+                                    seasons: serija.seasons,
+                                    tmdbRating: serija.vote_average.toFixed(1),
+                                    userScore,
+                                    komentari: results,
+                                    ukupnoKomentara: totalComments,
+                                    preporuke,
+                                    userScoreColor,
+                                    tmdbScoreColor,
+                                    serijaId,
+                                });
+                            }
+                        }
+                    );
                 }
             }
         );        
 
-        connection.end();
     } catch (error) {
         console.error('Došlo je do pogreške prilikom dohvaćanja podataka o seriji:', error);
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka o seriji.');
@@ -637,15 +662,55 @@ app.get('/serija/:serijaId/sezona/:sezonaId/epizoda/:epizodaId/cast', async (req
     }
 });
 
+app.get('/komentar/:tip/:id', (req, res) => {
+    const { tip, id } = req.params;
+    const korisnikId = req.session.userId;
+
+    if (!korisnikId) {
+        return res.redirect(`/login?redirect=/komentar/${tip}/${id}`);
+    }
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const query = `
+        SELECT tekst, ocjena 
+        FROM komentari 
+        WHERE korisnik_id = ? AND ${tip === 'film' ? 'film_id' : 'serija_id'} = ?
+    `;
+
+    connection.query(query, [korisnikId, id], (error, results) => {
+        connection.end();
+        if (error) {
+            console.error('Error fetching comment:', error);
+            return res.status(500).send('Error loading the form.');
+        }
+
+        const komentar = results[0] || null;
+        res.render('dodaj_izmijeni_komentar', {
+            komentar,
+            isEdit: !!komentar,
+            actionUrl: komentar ? '/uredi-komentar' : '/dodaj-komentar',
+            filmId: tip === 'film' ? id : null,
+            serijaId: tip === 'serija' ? id : null,
+        });
+    });
+});
+
 app.post('/dodaj-komentar', (req, res) => {
-    const { tekst, ocjena, filmId, serijaId, tip } = req.body;
+    const { tekst, ocjena, filmId, serijaId } = req.body;
     const korisnikId = req.session.userId;
 
     if (!korisnikId) {
         return res.status(401).send('You must be logged in to post a review.');
     }
 
-    const mysql = require('mysql');
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
@@ -661,16 +726,71 @@ app.post('/dodaj-komentar', (req, res) => {
     `;
 
     connection.query(query, [tekst, ocjena, korisnikId, filmId || null, serijaId || null], (error) => {
+        connection.end();
         if (error) {
             console.error('Error adding comment:', error);
-            return res.status(500).send('Error adding comment.');
+            return res.status(500).send('Error adding the comment.');
         }
         res.redirect(filmId ? `/film/${filmId}` : `/serija/${serijaId}`);
     });
-
-    connection.end();
 });
 
+app.post('/uredi-komentar', (req, res) => {
+    const { tekst, ocjena, filmId, serijaId } = req.body;
+    const korisnikId = req.session.userId;
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const query = `
+        UPDATE komentari 
+        SET tekst = ?, ocjena = ?, datum = NOW()
+        WHERE korisnik_id = ? AND (film_id = ? OR serija_id = ?)
+    `;
+
+    connection.query(query, [tekst, ocjena, korisnikId, filmId || null, serijaId || null], (error) => {
+        connection.end();
+        if (error) {
+            console.error('Error updating comment:', error);
+            return res.status(500).send('Error updating the comment.');
+        }
+        res.redirect(filmId ? `/film/${filmId}` : `/serija/${serijaId}`);
+    });
+});
+
+app.post('/izbrisi-komentar', (req, res) => {
+    const { filmId, serijaId } = req.body;
+    const korisnikId = req.session.userId;
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const query = `
+        DELETE FROM komentari 
+        WHERE korisnik_id = ? AND (film_id = ? OR serija_id = ?)
+    `;
+
+    connection.query(query, [korisnikId, filmId || null, serijaId || null], (error) => {
+        connection.end();
+        if (error) {
+            console.error('Error deleting comment:', error);
+            return res.status(500).send('Error deleting the comment.');
+        }
+        res.redirect(filmId ? `/film/${filmId}` : `/serija/${serijaId}`);
+    });
+});
 
 app.get('/komentari/:tip/:id', (req, res) => {
     console.log(`Fetching comments for ${req.params.tip} with ID ${req.params.id}`);

@@ -1,52 +1,66 @@
 <head>
     <link rel="stylesheet" href="/css/komentari.css">
 </head>
-<section class="comments-section">
+<div class="comments-section">
     <h2>Reviews</h2>
-    
-    <% if (komentari.length > 0) { %>
+
+    <% let userComment = null; %>
+    <% if (komentari && session && session.userId) { %>
+        <% userComment = komentari.find(k => k.korisnik_id === session.userId); %>
+    <% } %>
+
+    <% if (komentari && komentari.length > 0) { %>
+        <% if (userComment) { %>
+            <div class="comment-card user-comment">
+                <div class="flex-spaceBetween cur-user">
+                    <p><strong>Your Review:</strong></p>
+                    <p class="date"><%= new Date(userComment.datum).toLocaleDateString() %></p>
+                </div>
+                <p><%= userComment.tekst %></p>
+                <div class="flex-right">
+                    <div class="card-rating">
+                        <span class="rating">Rating: <%= userComment.ocjena %></span>
+                    </div>
+                    <div class="edit-button">
+                        <button class="btn-edit" onclick="window.location.href='/komentar/<%= type %>/<%= id %>'">Edit Review</button>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+
         <div class="comments-grid">
-            <% komentari.forEach(komentar => { %>
+            <% komentari.filter(k => !userComment || k.korisnik_id !== session.userId).forEach(komentar => { %>
                 <div class="comment-card">
                     <div class="flex-spaceBetween">
-                        <p><strong><%= komentar.nadimak ? komentar.nadimak : 'Guest' %>:</strong></p>
+                        <p><strong><%= komentar.nadimak || 'Guest' %>:</strong></p>
                         <p class="date"><%= new Date(komentar.datum).toLocaleDateString() %></p>
                     </div>
-                    <!-- 
-                    <div class="tockice">
-                        <div class="tockice-score">
-                            <span class="rating"><%= komentar.ocjena %></span>
-                        </div>
-                    </div>
-                    -->
                     <p><%= komentar.tekst %></p>
-                    <div class="card-rating">
-                        <span class="rating">Rating: <%= komentar.ocjena %></span>
+                    <div class="rating-padding">
+                        <div class="card-rating">
+                            <span class="rating">Rating: <%= komentar.ocjena %></span>
+                        </div>
                     </div>
                 </div>
             <% }) %>
         </div>
-        <% if (komentari.length === 3) { %>
-            <% let url = (typeof filmId !== 'undefined' && filmId !== null) ? `/svi-komentari/film/${filmId}` : `/svi-komentari/serija/${serijaId}`; %>
-            <button onclick="window.location.href='<%= url %>'">Read All Reviews</button>
+        <% if (ukupnoKomentara > 3) { %>
+            <div class="view-all-comments">
+                <a href="/svi-komentari/<%= type %>/<%= id %>" class="btn-view-all">View All Comments</a>
+            </div>
         <% } %>
+        
+        
     <% } else { %>
         <p>No reviews yet. Be the first to add one!</p>
     <% } %>
-    <% if (session.username) { %>
-        <form action="/dodaj-komentar" method="POST" class="add-comment-form">
-            <textarea name="tekst" placeholder="Add your review here..." required></textarea>
-            <input type="number" name="ocjena" placeholder="Rating (1-10)" min="1" max="10" required>
-            <% if (typeof filmId !== 'undefined' && filmId !== null) { %>
-                <input type="hidden" name="filmId" value="<%= filmId %>">
-                <input type="hidden" name="tip" value="film">
-            <% } else if (typeof serijaId !== 'undefined' && serijaId !== null) { %>
-                <input type="hidden" name="serijaId" value="<%= serijaId %>">
-                <input type="hidden" name="tip" value="serija">
-            <% } %>
-            <button type="submit">Submit Review</button>
-        </form>
+
+    <% if (session && session.username) { %>
+        <% if (!userComment) { %>
+            <p><a href="/komentar/<%= type %>/<%= id %>">Write a Review</a></p>
+        <% } %>
     <% } else { %>
-        <p><a href="/login">Login</a> to add a review.</p>
+        <p><a href="/login?redirect=/<%= type %>/<%= id %>">Login</a> to add a review.</p>
     <% } %>
-</section>
+</div>
+

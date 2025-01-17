@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Review</title>
+    <link rel="stylesheet" href="/css/komentari.css">
+</head>
+
+<body>
+    <%- include('partials/header') %>
+
+    <main>
+        <section class="edit-comment-section">
+            <h2><%= isEdit ? "Edit Your Review" : "Add a New Review" %></h2>
+            
+            <form action="<%= actionUrl %>" method="POST">
+                <textarea 
+                    name="tekst" 
+                    placeholder="Write your review here..." 
+                    required><%= komentar ? komentar.tekst : '' %></textarea>
+                
+                <select name="ocjena" required>
+                    <option value="" disabled <%= !komentar ? "selected" : "" %>>Select Rating</option>
+                    <% for (let i = 10; i >= 1; i--) { %>
+                        <option value="<%= i %>" <%= komentar && komentar.ocjena == i ? "selected" : "" %>>
+                            (<%= i %>) 
+                            <%= i === 10 ? "Masterpiece" : 
+                                i === 9 ? "Great" : 
+                                i === 8 ? "Very Good" : 
+                                i === 7 ? "Good" : 
+                                i === 6 ? "Fine" : 
+                                i === 5 ? "Average" : 
+                                i === 4 ? "Bad" : 
+                                i === 3 ? "Very Bad" : 
+                                i === 2 ? "Horrible" : "Appalling" %>
+                        </option>
+                    <% } %>
+                </select>
+
+                <% if (filmId) { %>
+                    <input type="hidden" name="filmId" value="<%= filmId %>">
+                <% } else if (serijaId) { %>
+                    <input type="hidden" name="serijaId" value="<%= serijaId %>">
+                <% } %>
+
+                <button type="submit" class="btn-submit"><%= isEdit ? "Update Review" : "Submit Review" %></button>
+            </form>
+
+            <% if (isEdit) { %>
+                <form action="/izbrisi-komentar" method="POST" onsubmit="return confirm('Are you sure you want to delete your review?')">
+                    <% if (filmId) { %>
+                        <input type="hidden" name="filmId" value="<%= filmId %>">
+                    <% } else if (serijaId) { %>
+                        <input type="hidden" name="serijaId" value="<%= serijaId %>">
+                    <% } %>
+                    <button type="submit" class="btn-delete">Delete Review</button>
+                </form>
+            <% } %>
+        </section>
+    </main>
+    
+    <%- include('partials/footer') %>
+    
+</body>
+</html>

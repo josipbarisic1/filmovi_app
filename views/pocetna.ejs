@@ -10,20 +10,22 @@
 <body>
     <%- include('partials/header') %>
 
-    <section class="search-section">
-        <form action="/pretrazi" method="post">
-            <input type="text" id="naziv" name="naziv" placeholder="Pretraži filmove, serije, ljude..." required>
-            <button type="submit">Pretraži</button>
-            <div class="filter-options">
-                <label for="category">Kategorija:</label>
-                <select id="category" name="category">
-                    <option value="movie">Filmovi</option>
-                    <option value="tv">Serije</option>
-                    <option value="person">Glumci</option>
-                </select>
-            </div>
-        </form>
-    </section>
+    <main>
+        <section class="search-section">
+            <form action="/pretrazi" method="post">
+                <input type="text" id="naziv" name="naziv" placeholder="Pretraži filmove, serije, ljude..." required>
+                <button type="submit">Pretraži</button>
+                <div class="filter-options">
+                    <label for="category">Kategorija:</label>
+                    <select id="category" name="category">
+                        <option value="movie">Filmovi</option>
+                        <option value="tv">Serije</option>
+                        <option value="person">Glumci</option>
+                    </select>
+                </div>
+            </form>
+        </section>
+    </main>
 
     <%- include('partials/footer') %>
 

@@ -11,151 +11,156 @@
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
 
 </head>
+
 <body>
     <%- include('partials/header') %>
-
-    <section class="film-section">
-        <div class="film-header" style="background-image: url('https://image.tmdb.org/t/p/original<%= film.backdrop_path || film.poster_path %>');">
-            <div class="overlay"></div>
-            <div class="film-content-wrapper">
-                <div class="film-content-container">
-                    <div class="poster-container">
-                        <img src="https://image.tmdb.org/t/p/w300<%= film.poster_path %>" alt="<%= film.title %> Poster" class="film-poster">
-                        <% if (film.videos && film.videos.results.length > 0) { %>
-                            <button class="action-btn play-trailer" onclick="playTrailer()" title="Pogledaj trailer">
-                                <i class="fas fa-play"></i> Play Trailer
-                            </button>
-                        <% } %>
-                    </div>
-                    <div class="film-info-wrapper">
-                        <div class="film-info">
-                            <div class="title-wrapper">
-                                <h1><%= film.title %> <span class="release-year">(<%= film.release_date ? film.release_date.substr(0, 4) : 'N/A' %>)</span></h1>
-                            </div>
-
-                            <div class="score-wrapper">
-                                <div class="score-container scuser">
-                                    <p>User Score</p>
-                                    <div class="score-box" style="--score-color: <%= userScoreColor %>;">
-                                        <span><%= userScore || 'N/A' %></span>
-                                    </div>
-                                </div>
-                                
-                                <div class="score-container sctmdb">
-                                    <p>TMDB Score</p>
-                                    <div class="score-box" style="--score-color: <%= tmdbScoreColor %>;">
-                                        <span><%= tmdbRating || 'N/A' %></span>
-                                    </div>
-                                </div>
-                                
-                            </div>   
-
-                            <div class="overview-wrapper">
-                                <h3>Overview</h3>
-                                <p><%= film.overview %></p>
-                                <p class="director"><strong>Director:</strong> <%= direktor || 'N/A' %></p>
-                            </div>                        
-                            
-                            <div class="film-actions">
-                                <button id="favorite-btn" class="action-btn favorite" title="Dodaj u favorite">
-                                    <i class="far fa-heart"></i>
+    
+    <main>
+        <section class="film-section">
+            <div class="film-header" style="background-image: url('https://image.tmdb.org/t/p/original<%= film.backdrop_path || film.poster_path %>');">
+                <div class="overlay"></div>
+                <div class="film-content-wrapper">
+                    <div class="film-content-container">
+                        <div class="poster-container">
+                            <img src="https://image.tmdb.org/t/p/w300<%= film.poster_path %>" alt="<%= film.title %> Poster" class="film-poster">
+                            <% if (film.videos && film.videos.results.length > 0) { %>
+                                <button class="action-btn play-trailer" onclick="playTrailer()" title="Pogledaj trailer">
+                                    <i class="fas fa-play"></i> Play Trailer
                                 </button>
-
-                                <button class="action-btn add-to-list" title="Dodaj na listu">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-
-                                <a href="/film/<%= film.id %>/detalji" class="action-btn details-btn" title="See detailed information">
-                                    <i class="fas fa-info-circle"></i> More Details
-                                </a>
-                            </div>
-
-                            <div class="misc-wrapper">
-                                <span><%= film.release_date %></span>
-                                <span><%= film.genres.map(genre => genre.name).join(', ') %></span>
-                                <span>
-                                    <%= `${Math.floor(film.runtime / 60)}h ${film.runtime % 60}m` %>
-                                </span> 
-                            </div>
+                            <% } %>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+                        <div class="film-info-wrapper">
+                            <div class="film-info">
+                                <div class="title-wrapper">
+                                    <h1><%= film.title %> <span class="release-year">(<%= film.release_date ? film.release_date.substr(0, 4) : 'N/A' %>)</span></h1>
+                                </div>
 
-    <div id="trailer-modal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeTrailer()">&times;</span>
-            <iframe id="trailer-video" width="708px" height="400px" frameborder="0" allowfullscreen></iframe>
-        </div>
-    </div>
-
-    <div class="main-content-wrapper">
-        <div class="cast-wrapper">
-            <div class="content-wrapper">
-                <section class="film-cast">
-                    <h2>Top Bill Cast</h2>
-                    <div class="cast-scroll-wrapper">
-                        <div class="cast-horizontal-scroll">
-                            <% film.credits.cast.slice(0, 10).forEach(actor => { %>
-                                <div class="cast-card">
-                                    <div class="cast-frame">
-                                        <a href="/osoba/<%= actor.id %>">
-                                            <img src="<%= actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholder.jpg' %>" alt="<%= actor.name %>">
-                                        </a>
-                                        <div class="cast-info">
-                                            <p class="cast-name"><strong><%= actor.name %></strong></p>
-                                            <p class="cast-character"><%= actor.character %></p>
+                                <div class="score-wrapper">
+                                    <div class="score-container scuser">
+                                        <p>User Score</p>
+                                        <div class="score-box" style="--score-color: <%= userScoreColor %>;">
+                                            <span><%= userScore || 'N/A' %></span>
                                         </div>
                                     </div>
+                                    
+                                    <div class="score-container sctmdb">
+                                        <p>TMDB Score</p>
+                                        <div class="score-box" style="--score-color: <%= tmdbScoreColor %>;">
+                                            <span><%= tmdbRating || 'N/A' %></span>
+                                        </div>
+                                    </div>
+                                    
+                                </div>   
+
+                                <div class="overview-wrapper">
+                                    <h3>Overview</h3>
+                                    <p><%= film.overview %></p>
+                                    <p class="director"><strong>Director:</strong> <%= direktor || 'N/A' %></p>
+                                </div>                        
+                                
+                                <div class="film-actions">
+                                    <button id="favorite-btn" class="action-btn favorite" title="Dodaj u favorite">
+                                        <i class="far fa-heart"></i>
+                                    </button>
+
+                                    <button class="action-btn add-to-list" title="Dodaj na listu">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+
+                                    <a href="/film/<%= film.id %>/detalji" class="action-btn details-btn" title="See detailed information">
+                                        <i class="fas fa-info-circle"></i> More Details
+                                    </a>
                                 </div>
-                            <% }) %>
+
+                                <div class="misc-wrapper">
+                                    <span><%= film.release_date %></span>
+                                    <span><%= film.genres.map(genre => genre.name).join(', ') %></span>
+                                    <span>
+                                        <%= `${Math.floor(film.runtime / 60)}h ${film.runtime % 60}m` %>
+                                    </span> 
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </section>
-                <a href="/film/<%= film.id %>/glumci" class="capitalLink">Full Cast & Crew</a>
-                <div class="hrLine">
-                    <hr>
                 </div>
+            </div>
+        </section>
 
-                <%- include('partials/comments', { komentari, filmId: film.id, session }) %>
-               
+        <div id="trailer-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeTrailer()">&times;</span>
+                <iframe id="trailer-video" width="708px" height="400px" frameborder="0" allowfullscreen></iframe>
             </div>
         </div>
 
-        <!-- <div class="divider"></div> -->
-
-        <div class="recommend-wrapper">
-            <div class="recommend">
-                <h2>Recommendations</h2>
-                <div class="recommend-grid">
-                    <% preporuke.forEach(preporuka => { %>
-                        <div class="recommend-card"
-                            data-image="<%= preporuka.backdrop_path ? 'https://image.tmdb.org/t/p/w780' + preporuka.backdrop_path : '/images/placeholder.jpg' %>">
-                            <a href="/film/<%= preporuka.id %>">
-                                <div class="poster"></div>
-                                <div class="recommend-naslov">
-                                    <p>
-                                        <%= preporuka.title %> (<%= preporuka.release_date ? preporuka.release_date.substr(0, 4) : 'N/A' %>)
-                                    </p>
-                                    <div class="flex-align-center">
-                                        <span class="recommend-score">
-                                            <%= preporuka.vote_average.toFixed(1) %>
-                                        </span>
+        <div class="main-content-wrapper">
+            <div class="cast-wrapper">
+                <div class="content-wrapper">
+                    <section class="film-cast">
+                        <h2>Top Bill Cast</h2>
+                        <div class="cast-scroll-wrapper">
+                            <div class="cast-horizontal-scroll">
+                                <% film.credits.cast.slice(0, 10).forEach(actor => { %>
+                                    <div class="cast-card">
+                                        <div class="cast-frame">
+                                            <a href="/osoba/<%= actor.id %>">
+                                                <img src="<%= actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholder.jpg' %>" alt="<%= actor.name %>">
+                                            </a>
+                                            <div class="cast-info">
+                                                <p class="cast-name"><strong><%= actor.name %></strong></p>
+                                                <p class="cast-character"><%= actor.character %></p>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </a>
+                                <% }) %>
+                            </div>
                         </div>
-                    <% }) %>
+                    </section>
+                    <a href="/film/<%= film.id %>/glumci" class="capitalLink">Full Cast & Crew</a>
+                    <div class="hrLine">
+                        <hr>
+                    </div>
+
+                    <%- include('partials/comments', { komentari, id: filmId, type: 'film', session }) %>
+                
+                </div>
+            </div>
+
+            <!-- <div class="divider"></div> -->
+
+            <div class="recommend-wrapper">
+                <div class="recommend">
+                    <h2>Recommendations</h2>
+                    <div class="recommend-grid">
+                        <% preporuke.forEach(preporuka => { %>
+                            <div class="recommend-card"
+                                data-image="<%= preporuka.backdrop_path ? 'https://image.tmdb.org/t/p/w780' + preporuka.backdrop_path : '/images/placeholder.jpg' %>">
+                                <a href="/film/<%= preporuka.id %>">
+                                    <div class="poster"></div>
+                                    <div class="recommend-naslov">
+                                        <p>
+                                            <%= preporuka.title %> (<%= preporuka.release_date ? preporuka.release_date.substr(0, 4) : 'N/A' %>)
+                                        </p>
+                                        <div class="flex-align-center">
+                                            <span class="recommend-score">
+                                                <%= preporuka.vote_average.toFixed(1) %>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        <% }) %>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="blank"></div>
+        <div class="blank"></div>
+
+    </main>
 
     <%- include('partials/footer') %>
+
 
     <script>
         function playTrailer() {

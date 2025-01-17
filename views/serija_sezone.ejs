@@ -13,53 +13,55 @@
 <body>
     <%- include('partials/header') %>
 
-    <div class="seasons-wrapper">
-        <div class="season-header">
-            <h1>
-                <%= serija.name %> <span>(<%= serija.first_air_date?.substr(0, 4) || serija.seasons[0]?.air_date?.substr(0, 4) || 'N/A' %>)</span>
-            </h1>
-            <a href="/serija/<%= serija.id %>" class="back-to-main">
-                <span style="color: white; padding-right: 5px;">◀</span> Back to main
-            </a>
-        </div>
+    <main>
+        <div class="seasons-wrapper">
+            <div class="season-header">
+                <h1>
+                    <%= serija.name %> <span>(<%= serija.first_air_date?.substr(0, 4) || serija.seasons[0]?.air_date?.substr(0, 4) || 'N/A' %>)</span>
+                </h1>
+                <a href="/serija/<%= serija.id %>" class="back-to-main">
+                    <span style="color: white; padding-right: 5px;">◀</span> Back to main
+                </a>
+            </div>
 
-        <div class="season-wrapper">
-            <% serija.seasons.forEach(season => { %>
-                <div class="seasons-content">
-                    <div class="season-card">
-                        <a href="/serija/<%= serija.id %>/season/<%= season.season_number %>">
-                            <img class="season-poster" src="<%= season.poster_path ? `https://image.tmdb.org/t/p/w200${season.poster_path}` : '/images/placeholder.jpg' %>" alt="Season Poster">
-                        </a>
-                        <div class="season-details">
-                            <div class="season-details-name">
-                                <a href="/serija/<%= serija.id %>/season/<%= season.season_number %>">
-                                    <h3>Season <%= season.season_number %></h3>
-                                </a>
-                            </div>
-        
-                            <div class="misc-wrapper tockice marginR3">
-                                <div class="tockice-score">
-                                    <span><%= serija.vote_average.toFixed(1) %></span>
+            <div class="season-wrapper">
+                <% serija.seasons.forEach(season => { %>
+                    <div class="seasons-content">
+                        <div class="season-card">
+                            <a href="/serija/<%= serija.id %>/season/<%= season.season_number %>">
+                                <img class="season-poster" src="<%= season.poster_path ? `https://image.tmdb.org/t/p/w200${season.poster_path}` : '/images/placeholder.jpg' %>" alt="Season Poster">
+                            </a>
+                            <div class="season-details">
+                                <div class="season-details-name">
+                                    <a href="/serija/<%= serija.id %>/season/<%= season.season_number %>">
+                                        <h3>Season <%= season.season_number %></h3>
+                                    </a>
                                 </div>
-                                <span><%= season.air_date?.substr(0, 4) || 'N/A' %></span>
-                                <span><%= season.episode_count || 'N/A' %> eps</span>
-                            </div>
-        
-                            <div class="season-details-messages">
-                                <p>
-                                    <% if (season && season.air_date) { %>
-                                        Season <%= season.season_number %> of <%= serija.name %> premiered on <%= new Date(season.air_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>.
-                                    <% } else { %>
-                                        Information about this season is not available.
-                                    <% } %>
-                                </p>
+            
+                                <div class="misc-wrapper tockice marginR3">
+                                    <div class="tockice-score">
+                                        <span><%= serija.vote_average.toFixed(1) %></span>
+                                    </div>
+                                    <span><%= season.air_date?.substr(0, 4) || 'N/A' %></span>
+                                    <span><%= season.episode_count || 'N/A' %> eps</span>
+                                </div>
+            
+                                <div class="season-details-messages">
+                                    <p>
+                                        <% if (season && season.air_date) { %>
+                                            Season <%= season.season_number %> of <%= serija.name %> premiered on <%= new Date(season.air_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>.
+                                        <% } else { %>
+                                            Information about this season is not available.
+                                        <% } %>
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            <% }) %>
+                <% }) %>
+            </div>
         </div>
-    </div>
+    </main>
     
     <%- include('partials/footer') %>
 

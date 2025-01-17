@@ -15,20 +15,33 @@
 .comment-card {
     border: 1px solid lightgrey;
     border-radius: 8px;
-    padding: 1rem;
+    background-color: #f9f9f9;
+    width: 100%;
+}
+
+.comment-card {
+    border: 1px solid lightgrey;
+    border-radius: 8px;
     background-color: #f9f9f9;
     width: 100%;
 }
 
 .comment-card p {
     margin: 5px 0;
+    white-space: pre-line;
+    padding: 1rem;
 }
 
 .flex-spaceBetween{
     display: flex;
     justify-content: space-between;
+    border-bottom: 1px solid lightgrey;
+    background-color: #d9d9d9;
 }
 
+.cur-user{
+    background-color: #a3e397;
+}
 /*
 .tockice{
     display: flex;
@@ -40,14 +53,20 @@
 } 
 */
 
+.flex-right {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0 0 10px;
+}
+
+.rating-padding {
+    padding: 10px 0 10px 10px;
+}
 
 .comment-card .rating {
     font-weight: bold;
 }
 
-.card-rating{
-    padding: 20px 0 0 0;
-}
 
 
 .comment-card .date {
@@ -55,18 +74,75 @@
     color: #6d6868;
 }
 
-.comments-section button {
-    display: block;
-    margin: 20px auto;
-    padding: 10px 15px;
+.view-all-comments {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.btn-view-all {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.btn-view-all:hover {
+    background-color: #0056b3;
+}
+
+.btn-edit {
+    display: inline-block;
+    padding: 10px 20px;
+    background: linear-gradient(45deg, #ff6b6b, #f06595);
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-bottom-right-radius: 5px;
+    border-top-left-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-edit:hover {
+    background: linear-gradient(45deg, #f06595, #ff6b6b);
+}
+
+
+
+
+
+
+.comment-card form textarea {
+    width: 100%;
+    height: 80px;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.comment-card form input[type="number"] {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.comment-card form .btn-submit {
     background-color: #0d4116;
     color: white;
     border: none;
     border-radius: 8px;
+    padding: 10px 15px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    width: 100%;
 }
 
-.comments-section button:hover {
+.comment-card form .btn-submit:hover {
     background-color: #09632e;
 }
+

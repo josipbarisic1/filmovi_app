@@ -10,79 +10,81 @@
 <body>
     <%- include('partials/header') %>
 
-    <section class="search-section">
-        <form action="/pretrazi" method="post">
-            <input type="text" id="naziv" name="naziv" value="<%= naziv %>" required placeholder="Pretraži filmove, serije, glumce...">
-            <button type="submit">Pretraži</button>
-        </form>
-    </section>
+    <main>
+        <section class="search-section">
+            <form action="/pretrazi" method="post">
+                <input type="text" id="naziv" name="naziv" value="<%= naziv %>" required placeholder="Pretraži filmove, serije, glumce...">
+                <button type="submit">Pretraži</button>
+            </form>
+        </section>
 
-    <section class="filter-section">
-        <ul>
-            <li>Filtriraj pretragu:</li>
-            <li><a href="/pretrazi?category=movie&naziv=<%= naziv %>">Filmovi</a></li>
-            <li><a href="/pretrazi?category=tv&naziv=<%= naziv %>">Serije</a></li>
-            <li><a href="/pretrazi?category=person&naziv=<%= naziv %>">Ljudi</a></li>
-        </ul>
-    </section>
+        <section class="filter-section">
+            <ul>
+                <li>Filtriraj pretragu:</li>
+                <li><a href="/pretrazi?category=movie&naziv=<%= naziv %>">Filmovi</a></li>
+                <li><a href="/pretrazi?category=tv&naziv=<%= naziv %>">Serije</a></li>
+                <li><a href="/pretrazi?category=person&naziv=<%= naziv %>">Ljudi</a></li>
+            </ul>
+        </section>
 
-    <% if (data && data.results.length > 0) { %>
-        <div class="movie-grid">
-            <% data.results.forEach(item => { %>
-                <a href="<%= category === 'movie' ? `/film/${item.id}` : category === 'tv' ? `/serija/${item.id}` : `/osoba/${item.id}` %>" class="movie-card-link">
-                    <div class="movie-card">
-                        <div class="movie-title-mobile">
-                            <%= item.title || item.name %>
-                            <% if (item.release_date || item.first_air_date) { %> 
-                                (<%= (item.release_date || item.first_air_date).substr(0, 4) %>)
-                            <% } %>
-                        </div>
-                        <div class="poster-wrapper">
-                            <img src="<% 
-                                if (category === 'person') { 
-                                    %><%= item.profile_path ? `https://image.tmdb.org/t/p/w200${item.profile_path}` : '/images/placeholderPerson.jpg' %><%
-                                } else { 
-                                    %><%= item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : '/images/placeholder.jpg' %><%
-                                } 
-                            %>" alt="Poster za <%= item.title || item.name %>">
-
-                        </div>
-                        <div class="movie-details">
-                            <h2 class="movie-title-full">
+        <% if (data && data.results.length > 0) { %>
+            <div class="movie-grid">
+                <% data.results.forEach(item => { %>
+                    <a href="<%= category === 'movie' ? `/film/${item.id}` : category === 'tv' ? `/serija/${item.id}` : `/osoba/${item.id}` %>" class="movie-card-link">
+                        <div class="movie-card">
+                            <div class="movie-title-mobile">
                                 <%= item.title || item.name %>
-                                <% if (item.release_date || item.first_air_date) { %>
+                                <% if (item.release_date || item.first_air_date) { %> 
                                     (<%= (item.release_date || item.first_air_date).substr(0, 4) %>)
                                 <% } %>
-                            </h2>
-                            <p><%= item.overview %></p>
-                        </div>             
-                    </div>
-                </a>
-            <% }) %>
-        </div>
-        
-        <div class="pagination">
-            <% if (data.page > 1) { %>
-                <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&page=<%= data.page - 1 %>">Prethodna</a>
-            <% } %>
+                            </div>
+                            <div class="poster-wrapper">
+                                <img src="<% 
+                                    if (category === 'person') { 
+                                        %><%= item.profile_path ? `https://image.tmdb.org/t/p/w200${item.profile_path}` : '/images/placeholderPerson.jpg' %><%
+                                    } else { 
+                                        %><%= item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : '/images/placeholder.jpg' %><%
+                                    } 
+                                %>" alt="Poster za <%= item.title || item.name %>">
+
+                            </div>
+                            <div class="movie-details">
+                                <h2 class="movie-title-full">
+                                    <%= item.title || item.name %>
+                                    <% if (item.release_date || item.first_air_date) { %>
+                                        (<%= (item.release_date || item.first_air_date).substr(0, 4) %>)
+                                    <% } %>
+                                </h2>
+                                <p><%= item.overview %></p>
+                            </div>             
+                        </div>
+                    </a>
+                <% }) %>
+            </div>
             
-            <% pagination.forEach(p => { %>
-                <% if (p === '...') { %>
-                    <span>...</span>
-                <% } else if (p === data.page) { %>
-                    <strong><%= p %></strong>
-                <% } else { %>
-                    <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&page=<%= p %>"><%= p %></a>
+            <div class="pagination">
+                <% if (data.page > 1) { %>
+                    <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&page=<%= data.page - 1 %>">Prethodna</a>
                 <% } %>
-            <% }) %>
-            
-            <% if (data.page < data.total_pages) { %>
-                <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&page=<%= data.page + 1 %>">Sljedeća</a>
-            <% } %>
-        </div>
-    <% } else { %>
-        <p>Nema rezultata za pretraživanje.</p>
-    <% } %>
+                
+                <% pagination.forEach(p => { %>
+                    <% if (p === '...') { %>
+                        <span>...</span>
+                    <% } else if (p === data.page) { %>
+                        <strong><%= p %></strong>
+                    <% } else { %>
+                        <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&page=<%= p %>"><%= p %></a>
+                    <% } %>
+                <% }) %>
+                
+                <% if (data.page < data.total_pages) { %>
+                    <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&page=<%= data.page + 1 %>">Sljedeća</a>
+                <% } %>
+            </div>
+        <% } else { %>
+            <p>Nema rezultata za pretraživanje.</p>
+        <% } %>
+    </main>
 
     <%- include('partials/footer') %>
 

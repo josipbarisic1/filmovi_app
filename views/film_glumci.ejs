@@ -10,54 +10,55 @@
 <body>
     <%- include('partials/header') %>
 
-    <div class="season-header">
-        <h1>
-            <%= filmTitle || 'Title unavailable' %> <span>(<%= releaseYear || 'N/A' %>)</span>
-        </h1>
-        <a href="<%= mediaType === 'movie' ? `/film/${mediaId}` : `/serija/${mediaId}` %>" class="back-to-main">
-            <span style="color: white; padding-right: 5px;">◀</span> Back to main
-        </a>
-    </div>
-    
-    <section class="film-cast">
-        <h2><%= mediaType === 'movie' ? 'Cast' : 'Series Cast' %></h2>
-        <div class="cast-grid">
-            <% if (cast.length === 0) { %>
-                <p>No cast members found.</p>
+    <main>
+        <div class="season-header">
+            <h1>
+                <%= filmTitle || 'Title unavailable' %> <span>(<%= releaseYear || 'N/A' %>)</span>
+            </h1>
+            <a href="<%= mediaType === 'movie' ? `/film/${mediaId}` : `/serija/${mediaId}` %>" class="back-to-main">
+                <span style="color: white; padding-right: 5px;">◀</span> Back to main
+            </a>
+        </div>
+        
+        <section class="film-cast">
+            <h2><%= mediaType === 'movie' ? 'Cast' : 'Series Cast' %></h2>
+            <div class="cast-grid">
+                <% if (cast.length === 0) { %>
+                    <p>No cast members found.</p>
+                <% } else { %>
+                    <% cast.forEach(actor => { %>
+                        <div class="cast-card">
+                            <a href="/osoba/<%= actor.id %>">
+                                <img src="<%= actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholderPerson.jpg' %>" alt="<%= actor.name %>">
+                            </a>
+                            <p><strong><%= actor.name %></strong> as <%= actor.character %></p>
+                        </div>
+                    <% }) %>
+                <% } %>
+            </div>
+        </section>
+        
+        <section class="film-crew">
+            <h2><%= mediaType === 'movie' ? 'Crew' : 'Series Crew' %></h2>
+            <% if (Object.keys(crewByDepartment).length === 0) { %>
+                <p>No crew members found.</p>
             <% } else { %>
-                <% cast.forEach(actor => { %>
-                    <div class="cast-card">
-                        <a href="/osoba/<%= actor.id %>">
-                            <img src="<%= actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : '/images/placeholderPerson.jpg' %>" alt="<%= actor.name %>">
-                        </a>
-                        <p><strong><%= actor.name %></strong> as <%= actor.character %></p>
+                <% Object.keys(crewByDepartment).forEach(department => { %>
+                    <h3><%= department %></h3>
+                    <div class="crew-grid">
+                        <% crewByDepartment[department].forEach(member => { %>
+                            <div class="crew-card">
+                                <a href="/osoba/<%= member.id %>">
+                                    <img src="<%= member.profile_path ? `https://image.tmdb.org/t/p/w200${member.profile_path}` : '/images/placeholderPerson.jpg' %>" alt="<%= member.name %>">
+                                </a>
+                                <p><strong><%= member.name %></strong> - <%= member.job %></p>
+                            </div>
+                        <% }) %>
                     </div>
                 <% }) %>
             <% } %>
-        </div>
-    </section>
-    
-    <section class="film-crew">
-        <h2><%= mediaType === 'movie' ? 'Crew' : 'Series Crew' %></h2>
-        <% if (Object.keys(crewByDepartment).length === 0) { %>
-            <p>No crew members found.</p>
-        <% } else { %>
-            <% Object.keys(crewByDepartment).forEach(department => { %>
-                <h3><%= department %></h3>
-                <div class="crew-grid">
-                    <% crewByDepartment[department].forEach(member => { %>
-                        <div class="crew-card">
-                            <a href="/osoba/<%= member.id %>">
-                                <img src="<%= member.profile_path ? `https://image.tmdb.org/t/p/w200${member.profile_path}` : '/images/placeholderPerson.jpg' %>" alt="<%= member.name %>">
-                            </a>
-                            <p><strong><%= member.name %></strong> - <%= member.job %></p>
-                        </div>
-                    <% }) %>
-                </div>
-            <% }) %>
-        <% } %>
-    </section>
-    
+        </section>
+    </main>
     
     <%- include('partials/footer') %>
     

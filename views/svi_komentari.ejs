@@ -12,30 +12,51 @@
 
     <%- include('partials/header') %>
 
-    <div class="season-header">
-        <h1>
-            <%= filmTitle || 'Title unavailable' %> <span>(<%= releaseYear || 'N/A' %>)</span>
-        </h1>
-        <a href="<%= mediaType === 'movie' ? `/film/${mediaId}` : `/serija/${mediaId}` %>" class="back-to-main">
-            <span style="color: white; padding-right: 5px;">◀</span> Back to main
-        </a>
-    </div>
+    <main>
+        <div class="season-header">
+            <h1>
+                <%= filmTitle || 'Title unavailable' %> <span>(<%= releaseYear || 'N/A' %>)</span>
+            </h1>
+            <a href="<%= mediaType === 'movie' ? `/film/${mediaId}` : `/serija/${mediaId}` %>" class="back-to-main">
+                <span style="color: white; padding-right: 5px;">◀</span> Back to main
+            </a>
+        </div>
 
-    <section class="all-comments">
-        <h1>All Reviews</h1>
-        <% if (komentari.length > 0) { %>
-            <% komentari.forEach(komentar => { %>
+        <section class="all-comments">
+            <h2>All Reviews</h2>
+            <% let userComment = null; %>
+            <% if (session.userId) { %>
+                <% userComment = komentari.find(k => k.korisnik_id === session.userId); %>
+            <% } %>
+        
+            <% if (userComment) { %>
+                <div class="comment-card user-comment">
+                    <div class="flex-spaceBetween">
+                        <p><strong>Your Review:</strong></p>
+                        <p class="date"><%= new Date(userComment.datum).toLocaleDateString() %></p>
+                    </div>
+                    <p><%= userComment.tekst %></p>
+                    <div class="card-rating">
+                        <span class="rating">Rating: <%= userComment.ocjena %></span>
+                    </div>
+                    <button class="btn-edit" onclick="window.location.href='/komentar/<%= mediaType %>/<%= mediaId %>'">Edit Review</button>
+                </div>
+            <% } %>
+        
+            <% komentari.filter(k => !userComment || k.korisnik_id !== session.userId).forEach(komentar => { %>
                 <div class="comment-card">
-                    <p><strong><%= komentar.nadimak ? komentar.nadimak : 'Guest' %>:</strong></p>
+                    <div class="flex-spaceBetween">
+                        <p><strong><%= komentar.nadimak %>:</strong></p>
+                        <p class="date"><%= new Date(komentar.datum).toLocaleDateString() %></p>
+                    </div>
                     <p><%= komentar.tekst %></p>
-                    <p class="rating">Rating: <%= komentar.ocjena %></p>
-                    <p class="date"><%= new Date(komentar.datum).toLocaleString() %></p>
+                    <div class="card-rating">
+                        <span class="rating">Rating: <%= komentar.ocjena %></span>
+                    </div>
                 </div>
             <% }) %>
-        <% } else { %>
-            <p>No reviews available.</p>
-        <% } %>
-    </section>
+        </section>
+    </main>
 
     <%- include('partials/footer') %>
 

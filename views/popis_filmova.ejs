@@ -9,29 +9,31 @@
 <body>
     <%- include('partials/header') %>
 
-    <h1>Vaš popis filmova</h1>
+    <main>
+        <h1>Vaš popis filmova</h1>
 
-    <% if (films.length > 0) { %>
-        <ul>
-            <% films.forEach(film => { %>
-                <li>
-                    <strong><%= film.naziv %></strong>
-                    (<%= film.godina_izdanja %>)
-                    - Žanr: <%= film.zanr %>
-                    <% if (film.pogledano) { %>
-                        - <em>Pogledano</em>
-                    <% } else { %>
-                        - <a href="/mark_watched/<%= film.id %>">Označi kao pogledano</a>
-                    <% } %>
-                </li>
-            <% }) %>
-        </ul>
-    <% } else { %>
-        <p>Vaš popis filmova je prazan.</p>
-    <% } %>
+        <% if (films.length > 0) { %>
+            <ul>
+                <% films.forEach(film => { %>
+                    <li>
+                        <strong><%= film.naziv %></strong>
+                        (<%= film.godina_izdanja %>)
+                        - Žanr: <%= film.zanr %>
+                        <% if (film.pogledano) { %>
+                            - <em>Pogledano</em>
+                        <% } else { %>
+                            - <a href="/mark_watched/<%= film.id %>">Označi kao pogledano</a>
+                        <% } %>
+                    </li>
+                <% }) %>
+            </ul>
+        <% } else { %>
+            <p>Vaš popis filmova je prazan.</p>
+        <% } %>
 
-    <a href="/">Natrag na pretragu</a>
-
+        <a href="/">Natrag na pretragu</a>
+    </main>
+    
     <%- include('partials/footer') %>
 
 </body>
