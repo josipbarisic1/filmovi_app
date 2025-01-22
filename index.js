@@ -662,7 +662,7 @@ app.get('/serija/:serijaId/sezona/:sezonaId/epizoda/:epizodaId/cast', async (req
     }
 });
 
-app.get('/komentar/:tip/:id', (req, res) => {
+app.get('/komentar/:tip/:id', async (req, res) => {
     const { tip, id } = req.params;
     const korisnikId = req.session.userId;
 
@@ -679,29 +679,51 @@ app.get('/komentar/:tip/:id', (req, res) => {
 
     connection.connect();
 
-    const query = `
+    const komentarQuery = `
         SELECT tekst, ocjena 
         FROM komentari 
         WHERE korisnik_id = ? AND ${tip === 'film' ? 'film_id' : 'serija_id'} = ?
     `;
 
-    connection.query(query, [korisnikId, id], (error, results) => {
-        connection.end();
-        if (error) {
-            console.error('Error fetching comment:', error);
-            return res.status(500).send('Error loading the form.');
-        }
+    const apiUrl = tip === 'film'
+        ? `https://api.themoviedb.org/3/movie/${id}?api_key=${process.env.TMDB_API_KEY}`
+        : `https://api.themoviedb.org/3/tv/${id}?api_key=${process.env.TMDB_API_KEY}`;
 
-        const komentar = results[0] || null;
+    try {
+        const komentarPromise = new Promise((resolve, reject) => {
+            connection.query(komentarQuery, [korisnikId, id], (error, results) => {
+                if (error) return reject(error);
+                resolve(results[0] || null);
+            });
+        });
+
+        const mediaPromise = axios.get(apiUrl);
+
+        const [komentar, mediaResponse] = await Promise.all([komentarPromise, mediaPromise]);
+        const mediaData = mediaResponse.data;
+
+        const naslov = tip === 'film' ? mediaData.title : mediaData.name;
+        const godina = (mediaData.release_date || mediaData.first_air_date || '').substr(0, 4);
+
         res.render('dodaj_izmijeni_komentar', {
             komentar,
             isEdit: !!komentar,
             actionUrl: komentar ? '/uredi-komentar' : '/dodaj-komentar',
             filmId: tip === 'film' ? id : null,
             serijaId: tip === 'serija' ? id : null,
+            naslov,
+            godina,
+            tip,
         });
-    });
+
+    } catch (error) {
+        console.error('Error fetching comment or media details:', error);
+        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
+    } finally {
+        connection.end();
+    }
 });
+
 
 app.post('/dodaj-komentar', (req, res) => {
     const { tekst, ocjena, filmId, serijaId } = req.body;
@@ -710,6 +732,18 @@ app.post('/dodaj-komentar', (req, res) => {
     if (!korisnikId) {
         return res.status(401).send('You must be logged in to post a review.');
     }
+
+    console.log(JSON.stringify(tekst));
+
+    const cleanedText = tekst
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .replace(/\n{2,}/g, '\n\n')
+        .trimEnd();
+
+
+    console.log('Original text:', tekst);
+    console.log('Processed text:', cleanedText);
 
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
@@ -725,7 +759,7 @@ app.post('/dodaj-komentar', (req, res) => {
         VALUES (?, ?, NOW(), ?, ?, ?)
     `;
 
-    connection.query(query, [tekst, ocjena, korisnikId, filmId || null, serijaId || null], (error) => {
+    connection.query(query, [cleanedText, ocjena, korisnikId, filmId || null, serijaId || null], (error) => {
         connection.end();
         if (error) {
             console.error('Error adding comment:', error);
@@ -735,9 +769,14 @@ app.post('/dodaj-komentar', (req, res) => {
     });
 });
 
+
+
 app.post('/uredi-komentar', (req, res) => {
     const { tekst, ocjena, filmId, serijaId } = req.body;
     const korisnikId = req.session.userId;
+
+    console.log('Updating comment:', { tekst, ocjena, filmId, serijaId, korisnikId });
+
 
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
@@ -755,7 +794,6 @@ app.post('/uredi-komentar', (req, res) => {
     `;
 
     connection.query(query, [tekst, ocjena, korisnikId, filmId || null, serijaId || null], (error) => {
-        connection.end();
         if (error) {
             console.error('Error updating comment:', error);
             return res.status(500).send('Error updating the comment.');
@@ -767,6 +805,9 @@ app.post('/uredi-komentar', (req, res) => {
 app.post('/izbrisi-komentar', (req, res) => {
     const { filmId, serijaId } = req.body;
     const korisnikId = req.session.userId;
+
+    console.log('Deleting comment:', { filmId, serijaId, korisnikId });
+
 
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
@@ -783,7 +824,6 @@ app.post('/izbrisi-komentar', (req, res) => {
     `;
 
     connection.query(query, [korisnikId, filmId || null, serijaId || null], (error) => {
-        connection.end();
         if (error) {
             console.error('Error deleting comment:', error);
             return res.status(500).send('Error deleting the comment.');

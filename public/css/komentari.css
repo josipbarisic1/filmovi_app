@@ -4,6 +4,10 @@
     border-radius: 8px;
 }
 
+h2{
+    padding-left: 18px;
+}
+
 .comments-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -12,11 +16,9 @@
     margin: auto;
 }
 
-.comment-card {
-    border: 1px solid lightgrey;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-    width: 100%;
+.all-comments{
+    display: grid;
+    justify-items: center;
 }
 
 .comment-card {
@@ -24,12 +26,52 @@
     border-radius: 8px;
     background-color: #f9f9f9;
     width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.comment-card {
+    border: 1px solid lightgrey;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    width: 100%;
+}
+
+.all-card{
+    border: 1px solid lightgrey;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    width: 90%;
 }
 
 .comment-card p {
     margin: 5px 0;
     white-space: pre-line;
     padding: 1rem;
+}
+
+.comment {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    padding: 15px;
+    font-size: 16px;
+}
+
+.comment.expanded {
+    overflow: visible;
+    max-height: none;
+}
+
+.read-more {
+    color: #006f13;
+    cursor: pointer;
+    text-decoration: none;
+    display: none;
+    margin-top: 0.5em;
+    padding-left: 15px;
 }
 
 .flex-spaceBetween{
@@ -59,8 +101,13 @@
     padding: 10px 0 0 10px;
 }
 
+
 .rating-padding {
     padding: 10px 0 10px 10px;
+}
+
+.all-rating{
+    padding: 20px;
 }
 
 .comment-card .rating {
@@ -75,23 +122,20 @@
 }
 
 .view-all-comments {
-    text-align: center;
     margin-top: 20px;
+    padding-bottom: 20px;
 }
 
-.btn-view-all {
-    display: inline-block;
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
+.view-all-comments a{
+    padding: 5px 10px 10px 5px;
+    margin-top: 25px;
+    margin-bottom: 5px;
     text-decoration: none;
     border-radius: 5px;
-    font-weight: bold;
+    font-weight: bolder;
+    padding-left: 15px;
 }
 
-.btn-view-all:hover {
-    background-color: #0056b3;
-}
 
 .btn-edit {
     display: inline-block;

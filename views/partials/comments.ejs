@@ -16,7 +16,13 @@
                     <p><strong>Your Review:</strong></p>
                     <p class="date"><%= new Date(userComment.datum).toLocaleDateString() %></p>
                 </div>
-                <p><%= userComment.tekst %></p>
+                <div class="comment" data-full-text="<%- userComment.tekst.replace(/"/g, '&quot;') %>">
+                    <%= userComment.tekst.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>') %>
+                </div>                
+                <span class="read-more">Read more
+                    <span style="color: #006f13; padding-left: 5px;">▼</span>
+                </span>
+                
                 <div class="flex-right">
                     <div class="card-rating">
                         <span class="rating">Rating: <%= userComment.ocjena %></span>
@@ -35,7 +41,12 @@
                         <p><strong><%= komentar.nadimak || 'Guest' %>:</strong></p>
                         <p class="date"><%= new Date(komentar.datum).toLocaleDateString() %></p>
                     </div>
-                    <p><%= komentar.tekst %></p>
+                    <div class="comment" data-full-text="<%- komentar.tekst.replace(/"/g, '&quot;') %>">
+                        <%= komentar.tekst.replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>') %>
+                    </div>
+                    <span class="read-more">Read more
+                        <span style="color: #006f13; padding-left: 5px;">▼</span>
+                    </span>
                     <div class="rating-padding">
                         <div class="card-rating">
                             <span class="rating">Rating: <%= komentar.ocjena %></span>
@@ -44,13 +55,12 @@
                 </div>
             <% }) %>
         </div>
+
         <% if (ukupnoKomentara > 3) { %>
             <div class="view-all-comments">
-                <a href="/svi-komentari/<%= type %>/<%= id %>" class="btn-view-all">View All Comments</a>
+                <a href="/svi-komentari/<%= type %>/<%= id %>" class="btn-view-all">View All Reviews</a>
             </div>
         <% } %>
-        
-        
     <% } else { %>
         <p>No reviews yet. Be the first to add one!</p>
     <% } %>
@@ -64,3 +74,66 @@
     <% } %>
 </div>
 
+<script>
+    function formatCommentText(text) {
+        text = text.replace(/\n+$/, '');
+
+        return text
+            .replace(/\n{2,}/g, '<br><br>')
+            .replace(/\n/g, '<br>');        
+    }
+
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const comments = document.querySelectorAll(".comment");
+        const readMoreButtons = document.querySelectorAll(".read-more");
+
+        comments.forEach((comment, index) => {
+            const fullText = comment.dataset.fullText;
+
+            const charCountWithoutSpaces = fullText.replace(/\s+/g, '').length;
+
+            const lines = fullText.split("\n");
+
+            const previewLines = lines.slice(0, 3).map((line, i, arr) => {
+                if (line.trim() === "" && arr[i - 1]?.trim() === "") {
+                    return null;
+                }
+                return line.trim() === "" ? "<br>" : line;
+            }).filter(line => line !== null);
+
+            let previewText = previewLines.join("<br>");
+            const isTruncatedByLines = lines.length > 3;
+
+            const charLimit = charCountWithoutSpaces > 300 ? 300 : 400;
+            if (fullText.length > charLimit) {
+                previewText = fullText.substring(0, charLimit) + "...";
+            }
+
+            const isTruncatedByChars = fullText.length > charLimit;
+
+            const isTruncated = isTruncatedByLines || isTruncatedByChars;
+
+            comment.innerHTML = formatCommentText(previewText);
+
+            const btn = readMoreButtons[index];
+            if (isTruncated) {
+                btn.style.display = "inline-block";
+
+                btn.addEventListener("click", () => {
+                    const isExpanded = comment.classList.toggle("expanded");
+                    if (isExpanded) {
+                        comment.innerHTML = formatCommentText(fullText);
+                        btn.textContent = "Show less";
+                    } else {
+                        comment.innerHTML = formatCommentText(previewText);
+                        btn.textContent = "Read more";
+                    }
+                });
+            } else {
+                btn.style.display = "none";
+            }
+        });
+
+    });
+</script>

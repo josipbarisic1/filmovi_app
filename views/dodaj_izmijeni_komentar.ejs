@@ -4,63 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Review</title>
-    <link rel="stylesheet" href="/css/komentari.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/komentari_akcije.css">
 </head>
-
 <body>
     <%- include('partials/header') %>
-
     <main>
+        <div class="season-header">
+            <h1>
+                <%= naslov %> <span>(<%= godina || 'N/A' %>)</span>
+            </h1>
+            <a href="<%= tip === 'film' ? `/film/${filmId}` : `/serija/${serijaId}` %>" class="back-to-seasons">
+                <span style="color: white; padding-right: 5px;">◀</span> Back to Main
+            </a>
+        </div>
+       
         <section class="edit-comment-section">
             <h2><%= isEdit ? "Edit Your Review" : "Add a New Review" %></h2>
-            
-            <form action="<%= actionUrl %>" method="POST">
-                <textarea 
-                    name="tekst" 
-                    placeholder="Write your review here..." 
+            <form action="<%= actionUrl %>" method="POST" class="review-form">
+                <textarea
+                    name="tekst"
+                    class="review-text"
+                    placeholder="Write your review here..."
                     required><%= komentar ? komentar.tekst : '' %></textarea>
-                
-                <select name="ocjena" required>
-                    <option value="" disabled <%= !komentar ? "selected" : "" %>>Select Rating</option>
-                    <% for (let i = 10; i >= 1; i--) { %>
-                        <option value="<%= i %>" <%= komentar && komentar.ocjena == i ? "selected" : "" %>>
-                            (<%= i %>) 
-                            <%= i === 10 ? "Masterpiece" : 
-                                i === 9 ? "Great" : 
-                                i === 8 ? "Very Good" : 
-                                i === 7 ? "Good" : 
-                                i === 6 ? "Fine" : 
-                                i === 5 ? "Average" : 
-                                i === 4 ? "Bad" : 
-                                i === 3 ? "Very Bad" : 
-                                i === 2 ? "Horrible" : "Appalling" %>
-                        </option>
-                    <% } %>
-                </select>
-
+               
+                <div class="rating-section">
+                    <label for="ocjena">Your Rating:</label>
+                    <select id="ocjena" name="ocjena" required>
+                        <option value="" disabled <%= !komentar ? "selected" : "" %>>Select Rating</option>
+                        <% for (let i = 10; i >= 1; i--) { %>
+                            <option value="<%= i %>" <%= komentar && komentar.ocjena == i ? "selected" : "" %>>
+                                (<%= i %>)
+                                <%= i === 10 ? "Masterpiece" :
+                                    i === 9 ? "Great" :
+                                    i === 8 ? "Very Good" :
+                                    i === 7 ? "Good" :
+                                    i === 6 ? "Fine" :
+                                    i === 5 ? "Average" :
+                                    i === 4 ? "Bad" :
+                                    i === 3 ? "Very Bad" :
+                                    i === 2 ? "Horrible" : "Appalling" %>
+                            </option>
+                        <% } %>
+                    </select>
+                </div>
                 <% if (filmId) { %>
                     <input type="hidden" name="filmId" value="<%= filmId %>">
                 <% } else if (serijaId) { %>
                     <input type="hidden" name="serijaId" value="<%= serijaId %>">
                 <% } %>
-
-                <button type="submit" class="btn-submit"><%= isEdit ? "Update Review" : "Submit Review" %></button>
+                <div class="button-group">
+                    <button type="submit" class="btn-submit"><%= isEdit ? "Update Review" : "Submit Review" %></button>
+                </div>
             </form>
-
-            <% if (isEdit) { %>
-                <form action="/izbrisi-komentar" method="POST" onsubmit="return confirm('Are you sure you want to delete your review?')">
-                    <% if (filmId) { %>
-                        <input type="hidden" name="filmId" value="<%= filmId %>">
-                    <% } else if (serijaId) { %>
-                        <input type="hidden" name="serijaId" value="<%= serijaId %>">
-                    <% } %>
-                    <button type="submit" class="btn-delete">Delete Review</button>
-                </form>
-            <% } %>
+            
         </section>
+        <% if (isEdit) { %>
+            <form action="/izbrisi-komentar" class="form-delete" method="POST" onsubmit="return confirm('Are you sure you want to delete your review?')">
+                <% if (filmId) { %>
+                    <input type="hidden" name="filmId" value="<%= filmId %>">
+                <% } else if (serijaId) { %>
+                    <input type="hidden" name="serijaId" value="<%= serijaId %>">
+                <% } %>
+                <button type="submit" class="btn-delete">Delete Review</button>
+            </form>
+        <% } %>
     </main>
-    
+   
     <%- include('partials/footer') %>
-    
+   
 </body>
 </html>
