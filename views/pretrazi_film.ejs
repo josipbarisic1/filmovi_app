@@ -11,20 +11,52 @@
     <%- include('partials/header') %>
 
     <main>
-        <section class="search-section">
-            <form action="/pretrazi" method="post">
-                <input type="text" id="naziv" name="naziv" value="<%= naziv %>" required placeholder="Pretraži filmove, serije, glumce...">
-                <button type="submit">Pretraži</button>
-            </form>
-        </section>
-
         <section class="filter-section">
-            <ul>
-                <li>Filtriraj pretragu:</li>
-                <li><a href="/pretrazi?category=movie&naziv=<%= naziv %>">Filmovi</a></li>
-                <li><a href="/pretrazi?category=tv&naziv=<%= naziv %>">Serije</a></li>
-                <li><a href="/pretrazi?category=person&naziv=<%= naziv %>">Ljudi</a></li>
-            </ul>
+            <form action="/pretrazi" method="get">
+                <input type="text" id="naziv" name="naziv" value="<%= naziv %>" required placeholder="Pretraži filmove, serije...">
+                <select name="category" id="category">
+                    <option value="movie" <%= category === 'movie' ? 'selected' : '' %>>Movies</option>
+                    <option value="tv" <%= category === 'tv' ? 'selected' : '' %>>TV Shows</option>
+                </select>
+
+                <ul>
+                    <li>Filtriraj pretragu:</li>
+                    <li>
+                        <select name="genre">
+                            <option value="">Žanr</option>
+                            <% genres.forEach(genre => { %>
+                                <option value="<%= genre.id %>" <%= genre.id == selectedGenre ? 'selected' : '' %>><%= genre.name %></option>
+                            <% }) %>
+                        </select>
+                    </li>
+                    <li>
+                        <select name="year">
+                            <option value="">Godina</option>
+                            <% for (let i = 1900; i <= new Date().getFullYear(); i++) { %>
+                                <option value="<%= i %>" <%= i == selectedYear ? 'selected' : '' %>><%= i %></option>
+                            <% } %>
+                        </select>
+                    </li>
+                    <li>
+                        <select name="language">
+                            <option value="">Jezik</option>
+                            <option value="en" <%= language === 'en' ? 'selected' : '' %>>Engleski</option>
+                            <option value="hr" <%= language === 'hr' ? 'selected' : '' %>>Hrvatski</option>
+                        </select>
+                    </li>
+                    <li>
+                        <ul>
+                            <li><a href="/movie/alphabetical">Abecedno</a></li>
+                            <li><a href="/movie/latest">Novi</a></li>
+                            <li><a href="/movie/most-viewed">Najgledaniji</a></li>
+                            <li><a href="/movie/top-rated">Najbolje ocijenjeni</a></li>
+                        </ul>                        
+                    </li>
+                    <li>
+                        <button type="submit">Primijeni filtre</button>
+                    </li>
+                </ul>
+            </form>
         </section>
 
         <% if (data && data.results.length > 0) { %>
@@ -64,23 +96,36 @@
             
             <div class="pagination">
                 <% if (data.page > 1) { %>
-                    <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&page=<%= data.page - 1 %>">Prethodna</a>
+                    <% if (naziv) { %>
+                        <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&genre=<%= selectedGenre %>&year=<%= selectedYear %>&language=<%= language %>&page=<%= data.page - 1 %>">Prethodna</a>
+                    <% } else if (sort) { %>
+                        <a href="/<%= category %>/<%= sort.replace('_', '-') %>?page=<%= data.page - 1 %>">Prethodna</a>
+                    <% } %>
                 <% } %>
-                
+
                 <% pagination.forEach(p => { %>
                     <% if (p === '...') { %>
                         <span>...</span>
                     <% } else if (p === data.page) { %>
                         <strong><%= p %></strong>
                     <% } else { %>
-                        <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&page=<%= p %>"><%= p %></a>
+                        <% if (naziv) { %>
+                            <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&genre=<%= selectedGenre %>&year=<%= selectedYear %>&language=<%= language %>&page=<%= p %>"><%= p %></a>
+                        <% } else if (sort) { %>
+                            <a href="/<%= category %>/<%= sort.replace('_', '-') %>?page=<%= p %>"><%= p %></a>
+                        <% } %>
                     <% } %>
                 <% }) %>
-                
+
                 <% if (data.page < data.total_pages) { %>
-                    <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&page=<%= data.page + 1 %>">Sljedeća</a>
+                    <% if (naziv) { %>
+                        <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&genre=<%= selectedGenre %>&year=<%= selectedYear %>&language=<%= language %>&page=<%= data.page + 1 %>">Sljedeća</a>
+                    <% } else if (sort) { %>
+                        <a href="/<%= category %>/<%= sort.replace('_', '-') %>?page=<%= data.page + 1 %>">Sljedeća</a>
+                    <% } %>
                 <% } %>
             </div>
+
         <% } else { %>
             <p>Nema rezultata za pretraživanje.</p>
         <% } %>

@@ -12,17 +12,15 @@
 
     <main>
         <section class="search-section">
-            <form action="/pretrazi" method="post">
-                <input type="text" id="naziv" name="naziv" placeholder="Pretraži filmove, serije, ljude..." required>
+            <form action="/pretrazi" method="get">
+                <input type="text" id="naziv" name="naziv" value="<%= naziv %>" required placeholder="Pretraži filmove, serije...">
+
+                <select name="category" id="category">
+                    <option value="movie" <%= category === 'movie' ? 'selected' : '' %>>Movies</option>
+                    <option value="tv" <%= category === 'tv' ? 'selected' : '' %>>TV Shows</option>
+                </select>                
+                
                 <button type="submit">Pretraži</button>
-                <div class="filter-options">
-                    <label for="category">Kategorija:</label>
-                    <select id="category" name="category">
-                        <option value="movie">Filmovi</option>
-                        <option value="tv">Serije</option>
-                        <option value="person">Glumci</option>
-                    </select>
-                </div>
             </form>
         </section>
     </main>

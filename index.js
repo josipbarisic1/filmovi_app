@@ -95,8 +95,16 @@ async function getEpisodeDetails(serijaId, sezonaId, epizodaId) {
 }
 
 app.get('/', (req, res) => {
-    res.render('pocetna', { title: 'Filmovi Popis' });
+    const naziv = req.query.naziv || '';
+    const category = req.query.category || 'movie';
+
+    res.render('pocetna', { 
+        title: 'Filmovi Popis',
+        naziv: naziv,
+        category: category
+    });
 });
+
 
 app.get('/test', (req, res) => {
     res.render('partials/header', { session: req.session });
@@ -196,28 +204,147 @@ app.get('/logout', (req, res) => {
     });
 });
 
-
 app.get('/pretrazi', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const naziv = req.query.naziv || '';
     const category = req.query.category || 'movie';
-    const page = parseInt(req.query.page) || 1;
+    const page = req.query.page || 1;
+    const genre = req.query.genre || '';
+    const year = req.query.year || '';
+    const language = req.query.language || '';
+    const sort = req.query.sort || 'alphabetical';
 
-    const url = `https://api.themoviedb.org/3/search/${category}?api_key=${apiKey}&query=${naziv}&page=${page}`;
+    let url = `https://api.themoviedb.org/3/search/${category}?api_key=${apiKey}&query=${naziv}&page=${page}`;
+
+    if (genre) {
+        url += `&with_genres=${genre}`;
+    }
+    if (year) {
+        url += `&year=${year}`;
+    }
+    if (language) {
+        url += `&language=${language}`;
+    }
+
+    switch (sort) {
+        case 'alphabetical':
+            url += '&sort_by=original_title.asc'; 
+            break;
+        case 'latest':
+            url += '&sort_by=release_date.desc'; 
+            break;
+        case 'most_viewed':
+            url += '&sort_by=popularity.desc'; 
+            break;
+        case 'top_rated':
+            url += '&sort_by=vote_average.desc'; 
+            break;
+        default:
+            url += '&sort_by=original_title.asc';
+    }
+
+    console.log(url);
+    try {
+        const response = await axios.get(url);
+        console.log(response.data);
+
+        const data = response.data;
+
+        const totalPages = data.total_pages;
+        const pagination = generatePagination(page, totalPages);
+
+        const genreResponse = await axios.get(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
+        const genres = genreResponse.data.genres;
+
+        res.render('pretrazi_film', {
+            data,
+            naziv,
+            category,
+            pagination,
+            page,
+            totalPages,
+            genres,
+            selectedGenre: genre,
+            selectedYear: year,
+            language,
+            sort
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
+    }
+});
+
+
+app.post('/pretrazi', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const naziv = req.body.naziv || '';
+    const category = req.body.category || 'movie';
+    const page = req.query.page || 1;
+    const genre = req.body.genre || '';
+    const year = req.body.year || '';
+    const language = req.body.language || '';
+    const sort = req.body.sort || 'alphabetical';
+
+    let url = `https://api.themoviedb.org/3/search/${category}?api_key=${apiKey}&query=${naziv}&page=${page}`;
+
+    if (genre) {
+        url += `&with_genres=${genre}`;
+    }
+    if (year) {
+        url += `&year=${year}`;
+    }
+    if (language) {
+        url += `&language=${language}`;
+    }
+
+    switch (sort) {
+        case 'alphabetical':
+            url += '&sort_by=original_title.asc';
+            break;
+        case 'latest':
+            url += '&sort_by=release_date.desc';
+            break;
+        case 'most_viewed':
+            url += '&sort_by=popularity.desc';
+            break;
+        case 'top_rated':
+            url += '&sort_by=vote_average.desc';
+            break;
+        default:
+            url += '&sort_by=original_title.asc';
+    }
+
     try {
         const response = await axios.get(url);
         const data = response.data;
 
         const totalPages = data.total_pages;
-
         const pagination = generatePagination(page, totalPages);
 
-        res.render('pretrazi_film', { data, naziv, category, pagination, page, totalPages });
+        const genreResponse = await axios.get(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
+        const genres = genreResponse.data.genres;
+
+        res.render('pretrazi_film', {
+            data,
+            naziv,
+            category,
+            pagination,
+            page,
+            totalPages,
+            genres,
+            selectedGenre: genre,
+            selectedYear: year,
+            language,
+            sort
+        });
     } catch (error) {
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
     }
 });
 
+// Funkcija za generiranje paginacije
+/* 
 function generatePagination(currentPage, totalPages) {
     let pagination = [];
 
@@ -236,27 +363,149 @@ function generatePagination(currentPage, totalPages) {
     }
 
     return pagination;
-}
+}*/
 
-app.post('/pretrazi', async (req, res) => {
+const generateUrl = (base, sort) => {
+    let sortBy = '';
+    switch (sort) {
+        case 'alphabetical':
+            sortBy = 'original_title.asc';
+            break;
+        case 'latest':
+            sortBy = 'release_date.desc';
+            break;
+        case 'most-viewed':
+            sortBy = 'popularity.desc';
+            break;
+        case 'top-rated':
+            sortBy = 'vote_average.desc';
+            break;
+        default:
+            sortBy = 'original_title.asc';
+    }
+    return `${base}&sort_by=${sortBy}`;
+};
+
+const generatePagination = (currentPage, totalPages) => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+            range.push(i);
+        }
+    }
+
+    for (let i of range) {
+        if (l) {
+            if (i - l === 2) {
+                rangeWithDots.push(l + 1);
+            } else if (i - l !== 1) {
+                rangeWithDots.push('...');
+            }
+        }
+        rangeWithDots.push(i);
+        l = i;
+    }
+    return rangeWithDots;
+};
+
+const updateRenderParams = async (url, category, sort, req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
-    const naziv = req.body.naziv || '';
-    const category = req.body.category || 'movie';
-    const page = req.query.page || 1;
+    const page = parseInt(req.query.page) || 1;
 
-    const url = `https://api.themoviedb.org/3/search/${category}?api_key=${apiKey}&query=${naziv}&page=${page}`;
     try {
-        const response = await axios.get(url);
+        const response = await axios.get(`${url}&page=${page}`);
+        const genreResponse = await axios.get(`https://api.themoviedb.org/3/genre/${category}/list?api_key=${apiKey}`);
+        
         const data = response.data;
-
         const totalPages = data.total_pages;
+
+        const filteredResults = data.results.filter(item => {
+            const releaseDate = item.release_date || item.first_air_date;
+            return releaseDate && new Date(releaseDate) <= new Date();
+        });
+
+        data.results = filteredResults;
+
         const pagination = generatePagination(page, totalPages);
 
-        res.render('pretrazi_film', { data, naziv, category, pagination, page, totalPages });
+        res.render('pretrazi_film', {
+            data,
+            naziv: '',
+            category,
+            genres: genreResponse.data.genres,
+            pagination,
+            page,
+            totalPages,
+            selectedGenre: '',
+            selectedYear: '',
+            language: '',
+            sort,
+        });
     } catch (error) {
+        console.error(error);
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
     }
+};
+
+app.get('/:category/latest', async (req, res) => {
+    const category = req.params.category;
+    const apiKey = process.env.TMDB_API_KEY;
+    const page = parseInt(req.query.page) || 1;
+
+    let url;
+    if (category === 'movie') {
+        url = `https://api.themoviedb.org/3/movie/now_playing?api_key=${apiKey}&page=${page}`;
+    } else if (category === 'tv') {
+        url = `https://api.themoviedb.org/3/tv/airing_today?api_key=${apiKey}&page=${page}`;
+    } else {
+        return res.status(400).send('Nevažeća kategorija.');
+    }
+
+    await updateRenderParams(url, category, 'latest', req, res);
 });
+
+app.get('/movie/alphabetical', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&sort_by=original_title.asc`;
+    await updateRenderParams(url, 'movie', 'alphabetical', req, res);
+});
+
+
+app.get('/movie/most-viewed', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&sort_by=popularity.desc`;
+    await updateRenderParams(url, 'movie', 'most_viewed', req, res);
+});
+
+app.get('/movie/top-rated', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&sort_by=vote_average.desc`;
+    await updateRenderParams(url, 'movie', 'top_rated', req, res);
+});
+
+app.get('/tv/alphabetical', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const url = `https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&sort_by=original_name.asc`;
+    await updateRenderParams(url, 'tv', 'alphabetical', req, res);
+});
+
+
+app.get('/tv/most-viewed', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const url = `https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&sort_by=popularity.desc`;
+    await updateRenderParams(url, 'tv', 'most_viewed', req, res);
+});
+
+app.get('/tv/top-rated', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const url = `https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&sort_by=vote_average.desc`;
+    await updateRenderParams(url, 'tv', 'top_rated', req, res);
+});
+
 
 app.get('/dodaj/:id', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
