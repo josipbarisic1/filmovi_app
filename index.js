@@ -23,6 +23,7 @@ app.set('views', path.join(__dirname, 'views'));
 
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
     secret: 'process.env.SESSION_SECRET',
@@ -243,10 +244,10 @@ app.get('/pretrazi', async (req, res) => {
             url += '&sort_by=original_title.asc';
     }
 
-    console.log(url);
+    //console.log(url);
     try {
         const response = await axios.get(url);
-        console.log(response.data);
+        //console.log(response.data);
 
         const data = response.data;
 
@@ -270,7 +271,7 @@ app.get('/pretrazi', async (req, res) => {
             sort
         });
     } catch (error) {
-        console.error(error);
+        //console.error(error);
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
     }
 });
@@ -506,49 +507,13 @@ app.get('/tv/top-rated', async (req, res) => {
     await updateRenderParams(url, 'tv', 'top_rated', req, res);
 });
 
+app.post('/popisi/kreiraj', async (req, res) => {
+    const { naziv, tip_popisa } = req.body;
+    const userId = req.session.userId;
+    const username = req.session.username;
 
-app.get('/dodaj/:id', async (req, res) => {
-    const apiKey = process.env.TMDB_API_KEY;
-    const filmId = req.params.id;
+    if (!username) return res.status(401).send('Morate biti prijavljeni.');
 
-    const url = `https://api.themoviedb.org/3/movie/${filmId}?api_key=${apiKey}`;
-    try {
-        const response = await axios.get(url);
-        const film = response.data;
-
-        const mysql = require('mysql');
-        const connection = mysql.createConnection({
-            host: process.env.DB_HOST,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_NAME,
-        });
-
-        connection.connect();
-
-        const naziv = connection.escape(film.title);
-        const godina_izdanja = connection.escape(film.release_date.substr(0, 4));
-        const zanr = connection.escape(film.genres.length > 0 ? film.genres[0].name : 'Nepoznato');
-
-        const sql = `INSERT INTO filmovi (naziv, godina_izdanja, zanr) VALUES (${naziv}, ${godina_izdanja}, ${zanr})`;
-
-        connection.query(sql, (error, results) => {
-            if (error) {
-                console.error('Greška prilikom dodavanja filma:', error);
-                res.status(500).send('Greška prilikom dodavanja filma u bazu.');
-            } else {
-                res.send('Film je uspješno dodan u bazu!');
-            }
-        });
-
-        connection.end();
-
-    } catch (error) {
-        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka o filmu.');
-    }
-});
-
-app.get('/popis', (req, res) => {
     const mysql = require('mysql');
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
@@ -559,19 +524,136 @@ app.get('/popis', (req, res) => {
 
     connection.connect();
 
-    const sql = 'SELECT * FROM filmovi';
-
-    connection.query(sql, (error, results) => {
-        if (error) {
-            console.error('Greška prilikom dohvaćanja filmova:', error);
-            res.status(500).send('Greška prilikom dohvaćanja filmova iz baze.');
-        } else {
-            res.render('popis_filmova', { films: results });
+    const sql = 'INSERT INTO popisi (naziv, tip_popisa, korisnik_id, sadrzaj) VALUES (?, ?, ?, ?)';
+    connection.query(sql, [naziv, tip_popisa, userId, ''], (err) => {
+        connection.end();
+        if (err) {
+            console.error('Greška prilikom stvaranja popisa:', err);
+            return res.status(500).send('Pogreška prilikom stvaranja popisa.');
         }
+        res.redirect('/popisi');
+    });
+});
+
+app.get('/popisi', async (req, res) => {
+    const userId = req.session.userId;
+    const username = req.session.username;
+
+    if (!username) return res.status(401).send('Morate biti prijavljeni.');
+
+    const mysql = require('mysql');
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
     });
 
-    connection.end();
+    connection.connect();
+
+    const sql = 'SELECT * FROM popisi WHERE korisnik_id = ?';
+    connection.query(sql, [userId], (err, results) => {
+        connection.end();
+        if (err) {
+            console.error('Greška prilikom dohvaćanja popisa:', err);
+            return res.status(500).send('Pogreška prilikom dohvaćanja popisa.');
+        }
+        res.render('popisi', { popisi: results });
+    });
 });
+
+app.post('/popisi/dodaj', async (req, res) => {
+    const { popis_id, sadrzaj_id } = req.body;
+
+    if (!popis_id || !sadrzaj_id) {
+        console.error("Missing data: ", req.body);
+        return res.status(400).send('Podaci nisu ispravni.');
+    }
+
+    const mysql = require('mysql');
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const checkSql = `SELECT sadrzaj FROM popisi WHERE id = ?`;
+    connection.query(checkSql, [popis_id], (err, results) => {
+        if (err) {
+            console.error('Greška prilikom provjere popisa:', err);
+            connection.end();
+            return res.status(500).send('Pogreška prilikom provjere popisa.');
+        }
+
+        if (results.length > 0) {
+            const existingContent = results[0].sadrzaj.split(',');
+            if (existingContent.includes(sadrzaj_id)) {
+                connection.end();
+                return res.status(409).send('Sadržaj već postoji na popisu.');
+            }
+        }
+
+        const sql = `
+            UPDATE popisi 
+            SET sadrzaj = CASE 
+                            WHEN sadrzaj = '' THEN ? 
+                            ELSE CONCAT(sadrzaj, ',', ?) 
+                          END 
+            WHERE id = ?
+        `;
+        connection.query(sql, [sadrzaj_id, sadrzaj_id, popis_id], (err) => {
+            connection.end();
+            if (err) {
+                console.error('Greška prilikom ažuriranja popisa:', err);
+                return res.status(500).send('Pogreška prilikom ažuriranja popisa.');
+            }
+            res.status(200).send('Uspješno dodano na popis.');
+        });
+    });
+});
+
+
+
+
+app.get('/api/popisi', async (req, res) => {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).send('Morate biti prijavljeni.');
+
+    const mysql = require('mysql');
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const { tip_popisa } = req.query;
+
+    let sql = 'SELECT id, naziv, tip_popisa FROM popisi WHERE korisnik_id = ?';
+    const params = [userId];
+
+    if (tip_popisa) {
+        sql += ' AND tip_popisa = ?';
+        params.push(tip_popisa);
+    }
+
+    connection.query(sql, params, (err, results) => {
+        connection.end();
+        if (err) {
+            console.error('Greška prilikom dohvaćanja popisa:', err);
+            return res.status(500).send('Pogreška prilikom dohvaćanja popisa.');
+        }
+        res.json(results);
+    });
+});
+
+
+
 
 app.get('/film/:id', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;

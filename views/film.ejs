@@ -62,15 +62,25 @@
                                     <button id="favorite-btn" class="action-btn favorite" title="Dodaj u favorite">
                                         <i class="far fa-heart"></i>
                                     </button>
-
-                                    <button class="action-btn add-to-list" title="Dodaj na listu">
+                                
+                                    <button id="open-list-dropdown" class="action-btn add-to-list" title="Dodaj na listu">
                                         <i class="fas fa-plus"></i>
                                     </button>
-
+                                
+                                    <div class="dropdown-popup" id="list-dropdown">
+                                        <div class="dropdown-option" onclick="window.location.href='/popisi'">+ Create New List</div>
+                                        <div class="dropdown-option" id="add-to-list">
+                                            Add To List
+                                            <div class="list-options" id="list-options">
+                                            </div>
+                                        </div>
+                                    </div>
+                                
                                     <a href="/film/<%= film.id %>/detalji" class="action-btn details-btn" title="See detailed information">
                                         <i class="fas fa-info-circle"></i> More Details
                                     </a>
                                 </div>
+                                
 
                                 <div class="misc-wrapper">
                                     <span><%= film.release_date %></span>
@@ -154,6 +164,8 @@
                 </div>
             </div>
         </div>
+        <div id="popup-message" class="popup-message"></div>
+
 
         <div class="blank"></div>
 
@@ -209,6 +221,83 @@
                 card.querySelector(".poster").style.backgroundImage = `url('${imageUrl}')`;
             });
         });
+
+        document.querySelector('.add-to-list').addEventListener('click', async () => {
+            const listOptions = document.getElementById('list-options');
+
+            if (listOptions.childElementCount === 0) {
+                try {
+                    const response = await fetch('/api/popisi?tip_popisa=filmovi');
+                    const popisi = await response.json();
+
+                    if (popisi.length === 0) {
+                        listOptions.innerHTML = '<p>No lists available.</p>';
+                    } else {
+                        popisi.forEach(popis => {
+                            const listItem = document.createElement('div');
+                            listItem.className = 'dropdown-option';
+                            listItem.innerText = popis.naziv;
+                            listItem.onclick = () => addToList(popis.id);
+                            listOptions.appendChild(listItem);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error fetching lists:', error);
+                }
+            }
+        });
+
+        function showPopupMessage(message, isSuccess) {
+            const popup = document.getElementById('popup-message');
+            popup.textContent = message;
+            popup.className = `popup-message ${isSuccess ? 'success' : 'error'}`;
+            popup.style.display = 'block';
+
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 4000);
+        }
+
+        async function addToList(listId) {
+            const contentId = '<%= film.id %>';
+            try {
+                const response = await fetch('/popisi/dodaj', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ popis_id: listId, sadrzaj_id: contentId }),
+                });
+
+                if (response.ok) {
+                    showPopupMessage('Successfully added to the list!', true);
+                } else if (response.status === 409) {
+                    showPopupMessage('This content is already in the list!', false);
+                } else {
+                    showPopupMessage('Failed to add to the list.', false);
+                }
+            } catch (error) {
+                console.error('Error adding to the list:', error);
+                showPopupMessage('Failed to add to the list.', false);
+            }
+        }
+
+
+
+        document.getElementById('open-list-dropdown').addEventListener('click', () => {
+            const dropdown = document.getElementById('list-dropdown');
+            dropdown.classList.toggle('active');
+        });
+
+        document.addEventListener('click', (event) => {
+            const dropdown = document.getElementById('list-dropdown');
+            const openButton = document.getElementById('open-list-dropdown');
+
+            if (!dropdown.contains(event.target) && event.target !== openButton) {
+                dropdown.classList.remove('active');
+            }
+        });
+
         
     </script>
 </body>

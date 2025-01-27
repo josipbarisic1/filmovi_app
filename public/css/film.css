@@ -139,6 +139,73 @@ body {
     padding-top: 30px;
 }
 
+.dropdown-popup {
+    display: none;
+    position: absolute;
+    background: rgb(209, 204, 204);
+    color: black;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    border-radius: 5px;
+}
+
+.fa-plus{
+    z-index: -1;
+}
+
+.dropdown-popup.active {
+    display: block;
+}
+
+.dropdown-option {
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.dropdown-option:hover {
+    background: #f0f0f0;
+}
+
+.list-options {
+    margin-top: 10px;
+}
+
+.popup-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: transparent;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+    animation: fadeOut 4s forwards;
+}
+
+.popup-message.success {
+    background-color: #28a745; 
+}
+
+.popup-message.error {
+    background-color: #dc3545;
+}
+
+@keyframes fadeOut {
+    0%, 90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        display: none;
+    }
+}
+
+
+
 .details-btn {
     display: inline-flex;
     align-items: center;

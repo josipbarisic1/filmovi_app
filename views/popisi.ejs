@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <title>Moji Popisi</title>
+</head>
+<body>
+    <h1>Moji Popisi</h1>
+
+    <form action="/popisi/kreiraj" method="POST">
+        <input type="text" name="naziv" placeholder="Naziv popisa" required>
+        <select name="tip_popisa">
+            <option value="filmovi">Filmovi</option>
+            <option value="serije">Serije</option>
+        </select>
+        <button type="submit">Kreiraj Popis</button>
+    </form>
+
+    <h2>Postojeći Popisi</h2>
+    <% popisi.forEach(popis => { %>
+        <div>
+            <h3><%= popis.naziv %> (<%= popis.tip_popisa %>)</h3>
+            <p>Sadržaj: <%= popis.sadrzaj %> (ID-ovi)</p>
+
+            <form action="/popisi/dodaj" method="POST">
+                <input type="hidden" name="popis_id" value="<%= popis.id %>">
+                <input type="number" name="sadrzaj_id" placeholder="ID filma/serije" required>
+                <button type="submit">Dodaj</button>
+            </form>
+        </div>
+    <% }) %>
+</body>
+</html>
