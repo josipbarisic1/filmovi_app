@@ -6,6 +6,17 @@ body {
     color: #333;
 }
 
+.error-popup {
+    background-color: #ff4d4d;
+    color: rgb(179, 31, 31);
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 15px;
+    z-index: 9999999;
+}
+
 .edit-comment-section {
     max-width: 800px;
     margin: 30px auto;

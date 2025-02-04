@@ -22,6 +22,7 @@
         <section class="edit-comment-section">
             <h2><%= isEdit ? "Edit Your Review" : "Add a New Review" %></h2>
             <form action="<%= actionUrl %>" method="POST" class="review-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <textarea
                     name="tekst"
                     class="review-text"
@@ -61,6 +62,7 @@
         </section>
         <% if (isEdit) { %>
             <form action="/izbrisi-komentar" class="form-delete" method="POST" onsubmit="return confirm('Are you sure you want to delete your review?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <% if (filmId) { %>
                     <input type="hidden" name="filmId" value="<%= filmId %>">
                 <% } else if (serijaId) { %>
@@ -72,6 +74,53 @@
     </main>
    
     <%- include('partials/footer') %>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.querySelector(".review-form");
+            const textarea = document.querySelector(".review-text");
+            const errorPopup = document.createElement("div");
+
+            errorPopup.classList.add("error-popup");
+            errorPopup.style.display = "none";
+            form.prepend(errorPopup);
+
+            form.addEventListener("submit", async function(event) {
+                let text = textarea.value.trim();
+                
+                if (!text.replace(/\s+/g, '')) {
+                    event.preventDefault();
+                    showError("Review cannot be empty.");
+                    return;
+                }
+
+                event.preventDefault();
+
+                const formData = new FormData(form);
+                try {
+                    const response = await fetch(form.action, {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const result = await response.json();
+                        showError(result.error || "An unknown error occurred.");
+                    } else {
+                        window.location.reload();
+                    }
+                } catch (error) {
+                    console.error("Fetch error:", error);
+                    form.submit(); 
+                }
+            });
+
+            function showError(message) {
+                errorPopup.textContent = message;
+                errorPopup.style.display = "block";
+            }
+        });
+    </script>
    
 </body>
 </html>

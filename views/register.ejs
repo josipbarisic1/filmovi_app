@@ -13,6 +13,8 @@
         <div class="form-container">
             <h1>Register</h1>
             <form action="/register" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
                 

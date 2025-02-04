@@ -5,6 +5,11 @@ const path = require('path');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
 const mysql = require('mysql');
+//const helmet = require('helmet');
+const csurf = require('csurf');
+const sanitizeHtml = require('sanitize-html');
+
+
 
 
 const app = express();
@@ -37,6 +42,35 @@ app.use((req, res, next) => {
     next();
 });
 
+/*
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            imgSrc: ["'self'", "https://image.tmdb.org", "https://www.themoviedb.org", "https://assets.tmdb.org"],
+            mediaSrc: ["'self'", "https://www.youtube.com", "https://i.ytimg.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://www.youtube.com", "https://www.gstatic.com"],
+            frameSrc: ["'self'", "https://www.youtube.com"],
+            connectSrc: ["'self'", "https://api.themoviedb.org"]
+        }
+    }
+})); */
+
+app.use(csurf());
+
+app.use((req, res, next) => {
+    res.locals.csrfToken = req.csrfToken();
+    next();
+});
+
+app.use((err, req, res, next) => {
+    if (err.code === 'EBADCSRFTOKEN') {
+        res.status(403);
+        res.send('CSRF zaštita: Nevažeći token.');
+    } else {
+        next(err);
+    }
+});
 
 /*
 //Generiraj secret
@@ -1055,16 +1089,17 @@ app.get('/komentar/:tip/:id', async (req, res) => {
     }
 });
 
+function containsInvalidCharacters(text) {
+    return text !== sanitizeHtml(text, { allowedTags: [], allowedAttributes: {} });
+}
 
 app.post('/dodaj-komentar', (req, res) => {
     const { tekst, ocjena, filmId, serijaId } = req.body;
     const korisnikId = req.session.userId;
 
     if (!korisnikId) {
-        return res.status(401).send('You must be logged in to post a review.');
+        return res.status(401).json({ error: "You must be logged in to post a review." });
     }
-
-    console.log(JSON.stringify(tekst));
 
     const cleanedText = tekst
         .replace(/\r\n/g, '\n')
@@ -1072,9 +1107,13 @@ app.post('/dodaj-komentar', (req, res) => {
         .replace(/\n{2,}/g, '\n\n')
         .trimEnd();
 
+    if (!cleanedText.replace(/\s+/g, '')) {
+        return res.status(400).json({ error: "Review cannot be empty." });
+    }
 
-    console.log('Original text:', tekst);
-    console.log('Processed text:', cleanedText);
+    if (containsInvalidCharacters(cleanedText)) {
+        return res.status(400).json({ error: "Review cannot contain invalid characters." });
+    }
 
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
@@ -1093,21 +1132,33 @@ app.post('/dodaj-komentar', (req, res) => {
     connection.query(query, [cleanedText, ocjena, korisnikId, filmId || null, serijaId || null], (error) => {
         connection.end();
         if (error) {
-            console.error('Error adding comment:', error);
-            return res.status(500).send('Error adding the comment.');
+            return res.status(500).json({ error: "Error adding the comment." });
         }
         res.redirect(filmId ? `/film/${filmId}` : `/serija/${serijaId}`);
     });
 });
 
-
-
 app.post('/uredi-komentar', (req, res) => {
     const { tekst, ocjena, filmId, serijaId } = req.body;
     const korisnikId = req.session.userId;
 
-    console.log('Updating comment:', { tekst, ocjena, filmId, serijaId, korisnikId });
+    if (!korisnikId) {
+        return res.status(401).json({ error: "You must be logged in to edit a review." });
+    }
 
+    const cleanedText = tekst
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .replace(/\n{2,}/g, '\n\n')
+        .trimEnd();
+
+    if (!cleanedText.replace(/\s+/g, '')) {
+        return res.status(400).json({ error: "Review cannot be empty." });
+    }
+
+    if (containsInvalidCharacters(cleanedText)) {
+        return res.status(400).json({ error: "Review cannot contain invalid characters." });
+    }
 
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
@@ -1124,10 +1175,10 @@ app.post('/uredi-komentar', (req, res) => {
         WHERE korisnik_id = ? AND (film_id = ? OR serija_id = ?)
     `;
 
-    connection.query(query, [tekst, ocjena, korisnikId, filmId || null, serijaId || null], (error) => {
+    connection.query(query, [cleanedText, ocjena, korisnikId, filmId || null, serijaId || null], (error) => {
+        connection.end();
         if (error) {
-            console.error('Error updating comment:', error);
-            return res.status(500).send('Error updating the comment.');
+            return res.status(500).json({ error: "Error updating the comment." });
         }
         res.redirect(filmId ? `/film/${filmId}` : `/serija/${serijaId}`);
     });
