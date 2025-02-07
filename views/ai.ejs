@@ -1,0 +1,41 @@
+<head>
+    <meta name="csrf-token" content="<%= csrfToken %>">
+</head>
+
+<form id="recommendationForm">
+    <input type="hidden" id="csrfToken" value="<%= csrfToken %>">
+    <label for="preferences">Enter your preferences:</label>
+    <input type="text" id="preferences" name="preferences" required>
+    <button type="submit">Get Recommendation</button>
+</form>
+<p id="recommendation"></p>
+
+<script>
+    document.getElementById('recommendationForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const preferences = document.getElementById('preferences').value;
+        const csrfToken = document.getElementById('csrfToken').value;
+        
+        try {
+            const response = await fetch('/ai-recommend', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    "CSRF-Token": csrfToken,
+                },
+                body: JSON.stringify({ userMessage: preferences }),
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                document.getElementById('recommendation').innerText = "Error: " + data.error;
+            } else {
+                document.getElementById('recommendation').innerText = "🎬 AI Suggests: " + data.recommendation;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('recommendation').innerText = "Error getting recommendation.";
+        }
+    });
+</script>

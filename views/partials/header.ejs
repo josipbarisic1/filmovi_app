@@ -43,11 +43,11 @@
                     <li><a href="/login?redirect=<%= encodeURIComponent(currentUrl) %>">Login</a></li>
                 <% } else { %>
                     <li class="dropdown">
-                        <a href="/profile" class="dropdown-toggle">
+                        <a href="/profil" class="dropdown-toggle">
                             <%= session.username %> ▼
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="/profile">Profile</a></li>
+                            <li><a href="/profil">Profile</a></li>
                             <% if (session.role === 'admin') { %>
                                 <li><a href="/admin">Admin Panel</a></li>
                             <% } %>

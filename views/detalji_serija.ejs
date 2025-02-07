@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= serija.name %> - More Details</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <div class="season-header">
+        <h1>
+            <%= serija.name %> <span>(<%= serija.first_air_date ? serija.first_air_date.substr(0, 4) : 'N/A' %>)</span>
+        </h1>
+        <a href="/serija/<%= serija.id %>" class="back-to-main"> 
+            <span style="color: white; padding-right: 5px;">◀</span> Back to Main 
+        </a>
+    </div>
+
+    <main class="details-container">
+        <p><strong>Original Title:</strong> <%= serija.original_name || "No Info Available" %></p>
+        <p><strong>Production Companies:</strong> <%= serija.production_companies.length ? serija.production_companies.map(c => c.name).join(', ') : "No Info Available" %></p>
+        <p><strong>Production Countries:</strong> <%= serija.production_countries.length ? serija.production_countries.map(c => c.name).join(', ') : "No Info Available" %></p>
+        <p><strong>Languages:</strong> <%= serija.spoken_languages.length ? serija.spoken_languages.map(l => l.english_name).join(', ') : "No Info Available" %></p>
+        <p><strong>Popularity:</strong> <%= serija.popularity ? serija.popularity.toFixed(2) : "No Info Available" %></p>
+        <p><strong>Vote Count:</strong> <%= serija.vote_count || "No Info Available" %></p>
+        <p><strong>TMDB Score:</strong> <%= serija.vote_average.toFixed(1) || "No Info Available" %></p>
+        <p><strong>Status:</strong> <%= serija.status || "No Info Available" %></p>
+        <% if (serija.homepage) { %>
+            <p><a href="<%= serija.homepage %>" target="_blank">Official Website</a></p>
+        <% } %>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>

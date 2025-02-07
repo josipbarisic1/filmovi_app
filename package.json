@@ -18,6 +18,8 @@
     "express-session": "^1.18.1",
     "helmet": "^8.0.0",
     "mysql": "^2.18.1",
+    "node-fetch": "^3.3.2",
+    "openai": "^4.83.0",
     "sanitize-html": "^2.14.0"
   }
 }

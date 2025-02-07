@@ -9,6 +9,11 @@ const mysql = require('mysql');
 const csurf = require('csurf');
 const sanitizeHtml = require('sanitize-html');
 
+const OpenAI = require("openai");
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    dangerouslyAllowBrowser: false,
+});
 
 
 
@@ -92,6 +97,48 @@ bcrypt.hash(plainPassword, saltRounds, (err, hash) => {
     }
 });
 */
+
+app.get('/ai-models', async (req, res) => {
+    try {
+        const models = await openai.models.list();
+        res.json(models);
+    } catch (error) {
+        console.error("Error fetching models:", error);
+        res.status(500).send("Error fetching models.");
+    }
+});
+
+app.get('/ai', (req, res) => {
+    res.render('ai', { csrfToken: req.csrfToken() });
+});
+
+app.post('/ai-recommend', async (req, res) => {
+    const { userMessage } = req.body;
+
+    if (!userMessage) {
+        return res.status(400).json({ error: "Message is required." });
+    }
+
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                { role: "system", content: "You are a movie/TV show recommendation AI. Suggest movies or TV shows based on user preferences." },
+                { role: "user", content: userMessage }
+            ],
+            max_tokens: 100,
+            temperature: 0.7
+        });
+
+        const aiResponse = completion.choices[0].message.content;
+        res.json({ recommendation: aiResponse });
+    } catch (error) {
+        console.error("Error with AI:", error);
+        res.status(500).json({ error: "AI recommendation failed." });
+    }
+});
+
+
 
 async function getSeriesDetails(serijaId) {
     const apiKey = process.env.TMDB_API_KEY;
@@ -238,6 +285,163 @@ app.get('/logout', (req, res) => {
         res.redirect(redirect);
     });
 });
+
+app.get('/profil', (req, res) => {
+    const korisnikId = req.session.userId;
+
+    if (!korisnikId) {
+        return res.redirect('/login');
+    }
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const query = `SELECT username, email_address, age, phone_number, gender, nadimak FROM korisnici WHERE id = ?`;
+
+    connection.query(query, [korisnikId], (error, results) => {
+        connection.end();
+        if (error || results.length === 0) {
+            console.error('Error fetching user profile:', error);
+            return res.status(500).send('Error loading profile.');
+        }
+
+        res.render('profil', {
+            korisnik: results[0]
+        });
+    });
+});
+
+app.get('/profile/edit', (req, res) => {
+    const korisnikId = req.session.userId;
+
+    if (!korisnikId) {
+        return res.redirect('/login');
+    }
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const query = `SELECT username, email_address, age, phone_number, gender, nadimak FROM korisnici WHERE id = ?`;
+
+    connection.query(query, [korisnikId], (error, results) => {
+        connection.end();
+        if (error || results.length === 0) {
+            console.error('Error fetching user profile:', error);
+            return res.status(500).send('Error loading profile.');
+        }
+
+        res.render('register', {
+            korisnik: results[0],
+            csrfToken: req.csrfToken(),
+            isEdit: true
+        });
+    });
+});
+
+app.post('/profile/update', (req, res) => {
+    const { username, email_address, age, phone_number, gender, nadimak } = req.body;
+    const korisnikId = req.session.userId;
+
+    if (!korisnikId) {
+        return res.status(401).send('Unauthorized');
+    }
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const query = `
+        UPDATE korisnici 
+        SET username = ?, email_address = ?, age = ?, phone_number = ?, gender = ?, nadimak = ?
+        WHERE id = ?
+    `;
+
+    connection.query(query, [username, email_address, age, phone_number, gender, nadimak, korisnikId], (error) => {
+        connection.end();
+        if (error) {
+            console.error('Error updating profile:', error);
+            return res.status(500).send('Error updating profile.');
+        }
+        res.redirect('/profil');
+    });
+});
+
+
+app.get('/profile/lists', (req, res) => {
+    const korisnikId = req.session.userId;
+
+    if (!korisnikId) {
+        return res.status(401).json({ error: "You must be logged in." });
+    }
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const query = `SELECT id, naziv, tip_popisa FROM popisi WHERE korisnik_id = ?`;
+
+    connection.query(query, [korisnikId], (error, results) => {
+        connection.end();
+        if (error) {
+            console.error("Error fetching lists:", error);
+            return res.status(500).json({ error: "Error fetching lists." });
+        }
+        res.json(results);
+    });
+});
+
+app.get('/profile/reviews', (req, res) => {
+    const korisnikId = req.session.userId;
+
+    if (!korisnikId) {
+        return res.status(401).json({ error: "You must be logged in." });
+    }
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const query = `
+        SELECT tekst, ocjena, datum, film_id, serija_id
+        FROM komentari WHERE korisnik_id = ? ORDER BY datum DESC`;
+
+    connection.query(query, [korisnikId], (error, results) => {
+        connection.end();
+        if (error) {
+            console.error("Error fetching reviews:", error);
+            return res.status(500).json({ error: "Error fetching reviews." });
+        }
+        res.json(results);
+    });
+});
+
 
 app.get('/pretrazi', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
@@ -596,15 +800,19 @@ app.get('/popisi', async (req, res) => {
     });
 });
 
-app.post('/popisi/dodaj', async (req, res) => {
+app.post('/popisi/dodaj', (req, res) => {
     const { popis_id, sadrzaj_id } = req.body;
+    const korisnikId = req.session.userId;
+
+    if (!korisnikId) {
+        return res.status(401).json({ error: "You must be logged in." });
+    }
 
     if (!popis_id || !sadrzaj_id) {
         console.error("Missing data: ", req.body);
-        return res.status(400).send('Podaci nisu ispravni.');
+        return res.status(400).json({ error: "Invalid data." });
     }
 
-    const mysql = require('mysql');
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
@@ -614,19 +822,19 @@ app.post('/popisi/dodaj', async (req, res) => {
 
     connection.connect();
 
-    const checkSql = `SELECT sadrzaj FROM popisi WHERE id = ?`;
-    connection.query(checkSql, [popis_id], (err, results) => {
+    const checkSql = `SELECT sadrzaj FROM popisi WHERE id = ? AND korisnik_id = ?`;
+    connection.query(checkSql, [popis_id, korisnikId], (err, results) => {
         if (err) {
-            console.error('Greška prilikom provjere popisa:', err);
+            console.error('Error checking list:', err);
             connection.end();
-            return res.status(500).send('Pogreška prilikom provjere popisa.');
+            return res.status(500).json({ error: 'Error checking list.' });
         }
 
         if (results.length > 0) {
             const existingContent = results[0].sadrzaj.split(',');
             if (existingContent.includes(sadrzaj_id)) {
                 connection.end();
-                return res.status(409).send('Sadržaj već postoji na popisu.');
+                return res.status(409).json({ error: 'Content already in list.' });
             }
         }
 
@@ -636,18 +844,20 @@ app.post('/popisi/dodaj', async (req, res) => {
                             WHEN sadrzaj = '' THEN ? 
                             ELSE CONCAT(sadrzaj, ',', ?) 
                           END 
-            WHERE id = ?
+            WHERE id = ? AND korisnik_id = ?
         `;
-        connection.query(sql, [sadrzaj_id, sadrzaj_id, popis_id], (err) => {
+
+        connection.query(sql, [sadrzaj_id, sadrzaj_id, popis_id, korisnikId], (err) => {
             connection.end();
             if (err) {
-                console.error('Greška prilikom ažuriranja popisa:', err);
-                return res.status(500).send('Pogreška prilikom ažuriranja popisa.');
+                console.error('Error updating list:', err);
+                return res.status(500).json({ error: 'Error updating list.' });
             }
-            res.status(200).send('Uspješno dodano na popis.');
+            res.status(200).json({ success: 'Added to list successfully.' });
         });
     });
 });
+
 
 
 
@@ -815,6 +1025,25 @@ app.get('/film/:id/glumci', async (req, res) => {
     }
 });
 
+app.get('/film/:id/detalji', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const filmId = req.params.id;
+
+    try {
+        const filmResponse = await axios.get(`https://api.themoviedb.org/3/movie/${filmId}?api_key=${apiKey}&append_to_response=credits`);
+        const film = filmResponse.data;
+
+        res.render('detalji_film', {
+            film,
+            userScore: film.vote_average.toFixed(1),
+            userScoreColor: getScoreColor(film.vote_average),
+        });
+    } catch (error) {
+        console.error("Error fetching movie details:", error);
+        res.status(500).send("Error loading details.");
+    }
+});
+
 
 app.get('/serija/:id', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
@@ -935,6 +1164,25 @@ app.get('/serija/:id/glumci', async (req, res) => {
     } catch (error) {
         console.error('Error fetching TV series credits:', error);
         res.status(500).send('An error occurred while fetching cast and crew data for the TV series.');
+    }
+});
+
+app.get('/serija/:id/detalji', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const serijaId = req.params.id;
+
+    try {
+        const serijaResponse = await axios.get(`https://api.themoviedb.org/3/tv/${serijaId}?api_key=${apiKey}&append_to_response=credits`);
+        const serija = serijaResponse.data;
+
+        res.render('detalji_serija', {
+            serija,
+            userScore: serija.vote_average.toFixed(1),
+            userScoreColor: getScoreColor(serija.vote_average),
+        });
+    } catch (error) {
+        console.error("Error fetching series details:", error);
+        res.status(500).send("Error loading details.");
     }
 });
 

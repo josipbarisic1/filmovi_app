@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= film.title %> - More Details</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <div class="season-header">
+        <h1>
+            <%= film.title %> <span>(<%= film.release_date ? film.release_date.substr(0, 4) : 'N/A' %>)</span>
+        </h1>
+        <a href="/film/<%= film.id %>" class="back-to-main"> 
+            <span style="color: white; padding-right: 5px;">◀</span> Back to Main 
+        </a>
+    </div>
+
+    <main class="details-container">
+        <p><strong>Original Title:</strong> <%= film.original_title || "No Info Available" %></p>
+        <p><strong>Budget:</strong> <%= film.budget > 0 ? `$${film.budget.toLocaleString()}` : "No Info Available" %></p>
+        <p><strong>Revenue:</strong> <%= film.revenue > 0 ? `$${film.revenue.toLocaleString()}` : "No Info Available" %></p>
+        <p><strong>Production Companies:</strong> <%= film.production_companies.length ? film.production_companies.map(c => c.name).join(', ') : "No Info Available" %></p>
+        <p><strong>Production Countries:</strong> <%= film.production_countries.length ? film.production_countries.map(c => c.name).join(', ') : "No Info Available" %></p>
+        <p><strong>Languages:</strong> <%= film.spoken_languages.length ? film.spoken_languages.map(l => l.english_name).join(', ') : "No Info Available" %></p>
+        <p><strong>Popularity:</strong> <%= film.popularity ? film.popularity.toFixed(2) : "No Info Available" %></p>
+        <p><strong>Vote Count:</strong> <%= film.vote_count || "No Info Available" %></p>
+        <p><strong>TMDB Score:</strong> <%= film.vote_average.toFixed(1) || "No Info Available" %></p>
+        <p><strong>Status:</strong> <%= film.status || "No Info Available" %></p>
+        <p><strong>Runtime:</strong> <%= film.runtime ? `${film.runtime} min` : "No Info Available" %></p>
+        <% if (film.homepage) { %>
+            <p><a href="<%= film.homepage %>" target="_blank">Official Website</a></p>
+        <% } %>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>

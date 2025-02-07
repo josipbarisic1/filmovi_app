@@ -1,0 +1,62 @@
+.profile-container {
+    width: 35%;
+    margin: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-layout {
+    display: flex;
+}
+
+.profile-nav {
+    width: 200px;
+    border-right: 2px solid #ddd;
+    padding-right: 20px;
+}
+
+.profile-nav ul {
+    display: block;
+    list-style: none;
+    padding: 0;
+}
+
+.profile-nav li {
+    margin-bottom: 10px;
+}
+
+.profile-nav a {
+    text-decoration: none;
+    font-weight: bold;
+    color: #333;
+    display: block;
+    padding: 10px;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+.profile-nav a.active {
+    background: #54ad21;
+    color: white;
+}
+
+.profile-content {
+    flex-grow: 1;
+    padding-left: 20px;
+}
+
+.profile-content h2{
+    margin-top: 0;
+}
+
+.hidden {
+    display: none;
+}
+
+.review-card {
+    background: #f5f5f5;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}

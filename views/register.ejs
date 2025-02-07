@@ -11,40 +11,45 @@
 
     <main>
         <div class="form-container">
-            <h1>Register</h1>
-            <form action="/register" method="POST">
+            <h1><%= isEdit ? "Change My Info" : "Register" %></h1>
+            <form action="<%= isEdit ? '/profile/update' : '/register' %>" method="POST">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 
                 <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
+                <input type="text" id="username" name="username" value="<%= korisnik ? korisnik.username : '' %>" required>
                 
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
+                <% if (!isEdit) { %>
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                <% } %>
                 
                 <label for="nadimak">Nickname:</label>
-                <input type="text" id="nadimak" name="nadimak">
-
+                <input type="text" id="nadimak" name="nadimak" value="<%= korisnik ? korisnik.nadimak : '' %>">
+    
                 <label for="email">Email Address:</label>
-                <input type="email" id="email" name="email_address" required>
-
+                <input type="email" id="email" name="email_address" value="<%= korisnik ? korisnik.email_address : '' %>" required>
+    
                 <label for="age">Age:</label>
-                <input type="number" id="age" name="age" required>
-
+                <input type="number" id="age" name="age" value="<%= korisnik ? korisnik.age : '' %>" required>
+    
                 <label for="phone">Phone Number:</label>
-                <input type="text" id="phone" name="phone_number">
-
+                <input type="text" id="phone" name="phone_number" value="<%= korisnik ? korisnik.phone_number : '' %>">
+    
                 <label for="gender">Gender:</label>
                 <select id="gender" name="gender">
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
+                    <option value="male" <%= korisnik && korisnik.gender === 'male' ? 'selected' : '' %>>Male</option>
+                    <option value="female" <%= korisnik && korisnik.gender === 'female' ? 'selected' : '' %>>Female</option>
+                    <option value="other" <%= korisnik && korisnik.gender === 'other' ? 'selected' : '' %>>Other</option>
                 </select>
-
-                <button type="submit">Register</button>
+    
+                <button type="submit"><%= isEdit ? "Apply Changes" : "Register" %></button>
             </form>
-            <p>Already have an account? <a href="/login">Login here</a></p>
+            <% if (!isEdit) { %>
+                <p>Already have an account? <a href="/login">Login here</a></p>
+            <% } %>
         </div>
     </main>
+    
 
     <%- include('partials/footer') %>
 

@@ -8,6 +8,7 @@
     <h1>Moji Popisi</h1>
 
     <form action="/popisi/kreiraj" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <input type="text" name="naziv" placeholder="Naziv popisa" required>
         <select name="tip_popisa">
             <option value="filmovi">Filmovi</option>
@@ -23,6 +24,7 @@
             <p>Sadržaj: <%= popis.sadrzaj %> (ID-ovi)</p>
 
             <form action="/popisi/dodaj" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <input type="hidden" name="popis_id" value="<%= popis.id %>">
                 <input type="number" name="sadrzaj_id" placeholder="ID filma/serije" required>
                 <button type="submit">Dodaj</button>

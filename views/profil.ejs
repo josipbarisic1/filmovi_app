@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/profil.css">
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <div class="season-header">
+        <h1>My Profile</h1>
+    </div>"
+
+    <main class="profile-container">
+    
+        <div class="profile-layout">
+            <nav class="profile-nav">
+                <ul>
+                    <li><a href="#" data-section="info" class="active">Profile Info</a></li>
+                    <li><a href="#" data-section="lists">My Lists</a></li>
+                    <li><a href="#" data-section="reviews">My Reviews</a></li>
+                    <li class="hidden sub-nav" id="reviews-nav">
+                        <a href="#" data-review-type="movies" class="active">Movies</a>
+                        <a href="#" data-review-type="tv-shows">Series</a>
+                    </li>                                      
+                </ul>
+            </nav>
+    
+            <div class="profile-content">
+                <section id="info" class="profile-section">
+                    <h2>Profile Info</h2>
+                    <p><strong>Username:</strong> <%= korisnik.username %></p>
+                    <p><strong>Nickname:</strong> <%= korisnik.nadimak || 'N/A' %></p>
+                    <p><strong>Email:</strong> <%= korisnik.email_address %></p>
+                    <p><strong>Age:</strong> <%= korisnik.age %></p>
+                    <p><strong>Phone:</strong> <%= korisnik.phone_number || 'N/A' %></p>
+                    <p><strong>Gender:</strong> <%= korisnik.gender || 'N/A' %></p>
+
+                    <a href="/profile/edit" class="btn-edit">Change My Info</a>
+                </section>
+    
+                <section id="lists" class="profile-section hidden">
+                    <h2>My Lists</h2>
+                    <ul id="user-lists"></ul>
+                    <p id="see-all-lists" class="hidden">
+                        <a href="/popisi">See All Lists</a>
+                    </p>
+                </section>
+    
+                <section id="reviews" class="profile-section hidden">
+                    <h2>My Reviews</h2>
+                    <div id="user-reviews"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+    
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const tabs = document.querySelectorAll(".profile-nav a[data-section]");
+            const sections = document.querySelectorAll(".profile-section");
+            const reviewsNav = document.getElementById("reviews-nav");
+            const reviewContainer = document.getElementById("user-reviews");
+            const listContainer = document.getElementById("user-lists");
+            const seeAllLists = document.getElementById("see-all-lists");
+    
+            // Prikaz sekcija ovisno o kliku
+            tabs.forEach(tab => {
+                tab.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    const section = this.getAttribute("data-section");
+    
+                    // Sakrijemo sve sekcije
+                    sections.forEach(sec => sec.classList.add("hidden"));
+                    document.getElementById(section).classList.remove("hidden");
+    
+                    // Resetiramo aktivni tab
+                    tabs.forEach(t => t.classList.remove("active"));
+                    this.classList.add("active");
+    
+                    // Ako je "My Reviews" -> prikaži Movies/TV Shows, inače sakrij
+                    if (section === "reviews") {
+                        reviewsNav.classList.remove("hidden");
+                    } else {
+                        reviewsNav.classList.add("hidden");
+                    }
+                });
+            });
+    
+            // Dohvaćanje popisa
+            async function fetchLists() {
+                try {
+                    const response = await fetch('/profile/lists');
+                    const lists = await response.json();
+    
+                    listContainer.innerHTML = ""; // Očisti prethodne liste
+    
+                    if (lists.length === 0) {
+                        listContainer.innerHTML = "<p>No lists available.</p>";
+                    } else {
+                        lists.forEach(list => {
+                            const li = document.createElement("li");
+                            li.innerHTML = `<a href="/popisi/${list.id}">${list.naziv} (${list.tip_popisa})</a>`;
+                            listContainer.appendChild(li);
+                        });
+                        seeAllLists.classList.remove("hidden");
+                    }
+                } catch (error) {
+                    console.error("Error fetching lists:", error);
+                }
+            }
+    
+            fetchLists(); // Pokreni dohvaćanje popisa odmah po učitavanju
+    
+            // Dohvaćanje recenzija
+            async function fetchReviews() {
+                try {
+                    const response = await fetch('/profile/reviews');
+                    const reviews = await response.json();
+                    reviewContainer.innerHTML = ""; // Očisti prethodne recenzije
+    
+                    if (reviews.length === 0) {
+                        reviewContainer.innerHTML = "<p>No reviews available.</p>";
+                        return;
+                    }
+    
+                    reviews.forEach(async (review) => {
+                        let naziv = "Unknown";
+                        let detailsUrl = "#";
+                        let type = review.film_id ? "movies" : "tv-shows";
+    
+                        if (review.film_id) {
+                            const tmdbResponse = await fetch(`https://api.themoviedb.org/3/movie/${review.film_id}?api_key=<%= process.env.TMDB_API_KEY %>`);
+                            const tmdbData = await tmdbResponse.json();
+                            naziv = tmdbData.title;
+                            detailsUrl = `/film/${review.film_id}`;
+                        } else if (review.serija_id) {
+                            const tmdbResponse = await fetch(`https://api.themoviedb.org/3/tv/${review.serija_id}?api_key=<%= process.env.TMDB_API_KEY %>`);
+                            const tmdbData = await tmdbResponse.json();
+                            naziv = tmdbData.name;
+                            detailsUrl = `/serija/${review.serija_id}`;
+                        }
+    
+                        const div = document.createElement("div");
+                        div.className = "review-card";
+                        div.dataset.type = type;
+                        div.innerHTML = `
+                            <h3>${naziv}</h3>
+                            <p><strong>Rating:</strong> ${review.ocjena}/10</p>
+                            <p>${review.tekst.length > 100 ? review.tekst.substring(0, 100) + '...' : review.tekst}</p>
+                            <p><a href="${detailsUrl}">View Details</a></p>
+                        `;
+                        reviewContainer.appendChild(div);
+                    });
+
+                    setTimeout(() => {
+                        document.querySelector('[data-review-type="movies"]').click();
+                    }, 100);     
+                } catch (error) {
+                    console.error("Error fetching reviews:", error);
+                }
+            }
+    
+            fetchReviews(); // Pokreni dohvaćanje recenzija odmah po učitavanju
+    
+            // Filtriranje Movies/TV Shows
+            const reviewTabs = document.querySelectorAll("[data-review-type]");
+            reviewTabs.forEach(tab => {
+                tab.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    const type = this.getAttribute("data-review-type");
+    
+                    document.querySelectorAll(".review-card").forEach(card => {
+                        card.style.display = (card.dataset.type === type) ? "block" : "none";
+                    });
+    
+                    reviewTabs.forEach(t => t.classList.remove("active"));
+                    this.classList.add("active");
+                });
+            });
+    
+        });
+    </script>
+    
+    
+    
+
+    <%- include('partials/footer') %>
+</body>
+</html>

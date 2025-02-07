@@ -10,6 +10,10 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap">
     <link rel="stylesheet" href="/css/serija.css">
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    
+    <script>
+        const csrfToken = "<%= csrfToken %>";
+    </script>
 </head>
 <body>
 
@@ -322,11 +326,13 @@
 
         async function addToList(listId) {
             const contentId = '<%= serija.id %>';
+
             try {
                 const response = await fetch('/popisi/dodaj', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
                     },
                     body: JSON.stringify({ popis_id: listId, sadrzaj_id: contentId }),
                 });
@@ -343,6 +349,7 @@
                 showPopupMessage('Failed to add to the list.', false);
             }
         }
+
 
 
         document.getElementById('open-list-dropdown').addEventListener('click', () => {
