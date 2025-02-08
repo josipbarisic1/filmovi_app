@@ -4,49 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
-    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/css/register.css">
 </head>
 <body>
     <%- include('partials/header') %>
 
+    
     <main>
-        <div class="form-container">
-            <h1><%= isEdit ? "Change My Info" : "Register" %></h1>
-            <form action="<%= isEdit ? '/profile/update' : '/register' %>" method="POST">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" value="<%= korisnik ? korisnik.username : '' %>" required>
-                
+        <div class="card">
+            <div class="card-header">
+                <div class="text-header">
+                    <h1><%= isEdit ? "Change My Info" : "Register" %></h1>
+                </div>
+            </div>
+            <div class="card-body">
+                <form action="<%= isEdit ? '/profile/update' : '/register' %>" method="POST">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" class="form-control" name="username" id="username" value="<%= korisnik ? korisnik.username : '' %>" required>
+                    </div>
+
+                    <% if (!isEdit) { %>
+                        <div class="form-group">
+                            <label for="password">Password:</label>
+                            <input type="password" class="form-control" name="password" id="password" required>
+                        </div>
+                        <!-- 
+                        <div class="form-group">
+                            <label for="confirm-password">Confirm Password:</label>
+                            <input type="password" class="form-control" name="confirm-password" id="confirm-password"  required>
+                        </div>
+                        -->
+                    <% } %>
+
+                    <div class="form-group">
+                        <label for="nadimak">Nickname:</label>
+                        <input type="text" class="form-control" name="nadimak" id="nadimak" value="<%= korisnik ? korisnik.nadimak : '' %>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email_address">Email:</label>
+                        <input type="email" class="form-control" name="email_address"  id="email_address" value="<%= korisnik ? korisnik.email_address : '' %>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="age">Age:</label>
+                        <input type="number" class="form-control" name="age" id="age" value="<%= korisnik ? korisnik.age : '' %>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone_number">Phone Number:</label>
+                        <input type="text" class="form-control" name="phone_number" id="phone_number" value="<%= korisnik ? korisnik.phone_number : '' %>">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gender">Gender:</label>
+                        <select class="form-control" name="gender" id="gender">
+                            <option value="male" <%= korisnik && korisnik.gender === 'male' ? 'selected' : '' %>>Male</option>
+                            <option value="female" <%= korisnik && korisnik.gender === 'female' ? 'selected' : '' %>>Female</option>
+                            <option value="other" <%= korisnik && korisnik.gender === 'other' ? 'selected' : '' %>>Other</option>
+                        </select>
+                    </div>
+                    <button type="submit"><%= isEdit ? "Apply Changes" : "Register" %></button>
+
+                </form>
                 <% if (!isEdit) { %>
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
+                    <p>Already have an account? <a href="/login">Login here</a></p>
                 <% } %>
-                
-                <label for="nadimak">Nickname:</label>
-                <input type="text" id="nadimak" name="nadimak" value="<%= korisnik ? korisnik.nadimak : '' %>">
-    
-                <label for="email">Email Address:</label>
-                <input type="email" id="email" name="email_address" value="<%= korisnik ? korisnik.email_address : '' %>" required>
-    
-                <label for="age">Age:</label>
-                <input type="number" id="age" name="age" value="<%= korisnik ? korisnik.age : '' %>" required>
-    
-                <label for="phone">Phone Number:</label>
-                <input type="text" id="phone" name="phone_number" value="<%= korisnik ? korisnik.phone_number : '' %>">
-    
-                <label for="gender">Gender:</label>
-                <select id="gender" name="gender">
-                    <option value="male" <%= korisnik && korisnik.gender === 'male' ? 'selected' : '' %>>Male</option>
-                    <option value="female" <%= korisnik && korisnik.gender === 'female' ? 'selected' : '' %>>Female</option>
-                    <option value="other" <%= korisnik && korisnik.gender === 'other' ? 'selected' : '' %>>Other</option>
-                </select>
-    
-                <button type="submit"><%= isEdit ? "Apply Changes" : "Register" %></button>
-            </form>
-            <% if (!isEdit) { %>
-                <p>Already have an account? <a href="/login">Login here</a></p>
-            <% } %>
+            </div>
         </div>
     </main>
     

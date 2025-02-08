@@ -33,6 +33,28 @@
         <% if (film.homepage) { %>
             <p><a href="<%= film.homepage %>" target="_blank">Official Website</a></p>
         <% } %>
+
+        <div class="where-to-watch">
+            <h2>Where to Watch?</h2>
+            <% if (watchProviders && Object.keys(watchProviders).length > 0) { %>
+                <% Object.keys(watchProviders).forEach(country => { %>
+                    <% if (watchProviders[country].length > 0) { %>
+                        <h3>Available in <%= country %>:</h3>
+                        <ul>
+                            <% watchProviders[country].forEach(provider => { %>
+                                <li>
+                                    <img src="https://image.tmdb.org/t/p/original<%= provider.logo_path %>" alt="<%= provider.provider_name %>">
+                                    <%= provider.provider_name %>
+                                </li>
+                            <% }) %>
+                        </ul>
+                    <% } %>
+                <% }) %>
+            <% } else { %>
+                <p>Currently unavailable for streaming.</p>
+            <% } %>
+        </div>
+        
     </main>
 
     <%- include('partials/footer') %>

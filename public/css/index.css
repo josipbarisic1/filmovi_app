@@ -6,21 +6,18 @@
     max-width: 800px;
     border-radius: 8px;
 }
-
 .search-section form {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 10px;
 }
-
 .search-section input[type="text"] {
     flex: 1;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
-
 .search-section button {
     padding: 10px 20px;
     background-color: #007BFF;
@@ -30,24 +27,173 @@
     cursor: pointer;
     transition: background-color 0.2s;
 }
-
 .search-section button:hover {
     background-color: #0056b3;
 }
-
 .filter-options {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-top: 10px;
 }
-
 .filter-options label {
     font-weight: bold;
 }
-
 .filter-options select {
     padding: 8px;
     border-radius: 4px;
     border: 1px solid #ccc;
+}
+
+
+.search-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.search-form input, .search-form select, .search-form button {
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 5px;
+}
+
+.search-form input {
+    width: 40%;
+    border: 1px solid #ccc;
+}
+
+.search-form select {
+    width: 20%;
+    border: 1px solid #ccc;
+}
+
+.search-form button {
+    background-color: #007BFF;
+    color: white;
+    cursor: pointer;
+}
+
+.movie-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 220px)); 
+    gap: 20px;
+    padding: 20px;
+    justify-content: center;
+}
+
+.movie-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px; 
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    max-width: 220px; 
+    border: 1px solid #ddd; 
+}
+
+.movie-card:hover {
+    transform: scale(1.07);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+}
+
+.poster-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 150%;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.poster-wrapper img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.movie-details {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    padding: 15px;
+    overflow: hidden;
+}
+
+.movie-details p{
+    margin-top: 10px;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    white-space: normal;
+}
+
+.movie-card:hover .movie-details {
+    opacity: 1;
+}
+
+.movie-title-full {
+    font-size: 1.1rem;
+    margin: 0;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.movie-title-full::after {
+    content: " ";
+}
+
+.hero {
+    background: url('/images/pocetnaBackground.jpg') center/cover no-repeat;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+
+.hero h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.search-form {
+    display: flex;
+    gap: 10px;
+}
+
+
+@media (max-width: 480px) {
+    .movie-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 15px;
+        padding: 10px;
+    }
+
+    .movie-title-mobile {
+        display: block; 
+    }
+
+    .movie-details {
+        display: none; 
+    }
 }

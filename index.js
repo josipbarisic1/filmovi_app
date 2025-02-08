@@ -116,25 +116,99 @@ app.post('/ai-recommend', async (req, res) => {
     const { userMessage } = req.body;
 
     if (!userMessage) {
+        console.log("[ERROR] Empty user message.");
         return res.status(400).json({ error: "Message is required." });
     }
 
     try {
+        const systemMessage = `You are a movie/TV show recommendation AI. Format your response as follows:
+        Title: "<title>"
+        Year: <year>
+        Language: <language>
+        Reason: "<short explanation>".
+        At the end say: "Here's a link to the CONTENT" - instead of 'CONTENT' write 'movie' or 'TV show' accordingly`;
+
         const completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
-                { role: "system", content: "You are a movie/TV show recommendation AI. Suggest movies or TV shows based on user preferences." },
+                { role: "system", content: systemMessage },
                 { role: "user", content: userMessage }
             ],
-            max_tokens: 100,
+            max_tokens: 120,
             temperature: 0.7
         });
 
         const aiResponse = completion.choices[0].message.content;
-        res.json({ recommendation: aiResponse });
+        console.log("[AI RESPONSE]:", aiResponse);
+
+        if (aiResponse.includes("I only answer movie-related questions")) {
+            console.log("[AI] Invalid query (not movie-related).");
+            throw new Error("Invalid query: AI only answers about movies/TV.");
+        }
+
+        // **Ekstrakcija podataka pomoću regexa**
+        const titleMatch = aiResponse.match(/Title:\s*"([^"]+)"/);
+        const yearMatch = aiResponse.match(/Year:\s*(\d{4})/);
+        const languageMatch = aiResponse.match(/Language:\s*([\w-]+)/);
+
+        if (!titleMatch || !yearMatch || !languageMatch) {
+            console.log("[ERROR] Could not extract title/year/language from AI response.");
+            return res.json({ recommendation: aiResponse, link: null });
+        }
+
+        let recommendedTitle = titleMatch[1].trim();
+        let recommendedYear = parseInt(yearMatch[1].trim());
+        let recommendedLanguage = languageMatch[1].trim();
+
+        console.log("[EXTRACTED DATA] Title:", recommendedTitle, "| Year:", recommendedYear, "| Language:", recommendedLanguage);
+
+        // **Ispravak jezika**
+        recommendedLanguage = "en-US"; // TMDB koristi "en-US" umjesto "English"
+
+        // **Čišćenje naslova**
+        recommendedTitle = recommendedTitle.replace(/[^a-zA-Z0-9 ]/g, "");
+
+        const apiKey = process.env.TMDB_API_KEY;
+        const searchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(recommendedTitle)}&language=${recommendedLanguage}`;
+
+        console.log("[TMDB REQUEST] URL:", searchUrl);
+
+        const searchResponse = await axios.get(searchUrl);
+        const searchResults = searchResponse.data.results;
+
+        console.log("[TMDB RESPONSE] Results:", searchResults.length);
+
+        if (!searchResults || searchResults.length === 0) {
+            console.log("[ERROR] No TMDB results found.");
+            return res.json({ recommendation: aiResponse, link: null });
+        }
+
+        // **Filtriraj rezultate prema godini, dopuštajući odstupanje od ±1 godinu**
+        const bestMatch = searchResults
+            .filter(item => {
+                const itemYear = item.release_date ? parseInt(item.release_date.substr(0, 4)) :
+                                 item.first_air_date ? parseInt(item.first_air_date.substr(0, 4)) : null;
+                return itemYear && Math.abs(itemYear - recommendedYear) <= 1;
+            })
+            .sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))[0];
+
+        if (!bestMatch) {
+            console.log("[ERROR] No matching movie/TV show found for extracted year.");
+            return res.json({ recommendation: aiResponse, link: null });
+        }
+
+        console.log("[MATCH FOUND] ID:", bestMatch.id, "| Media Type:", bestMatch.media_type);
+
+        const mediaType = bestMatch.media_type === 'movie' ? 'film' : 'serija';
+        const mediaId = bestMatch.id;
+        const mediaLink = `/${mediaType}/${mediaId}`;
+
+        console.log("[FINAL LINK] Generated link:", mediaLink);
+
+        res.json({ recommendation: aiResponse, link: mediaLink });
     } catch (error) {
-        console.error("Error with AI:", error);
-        res.status(500).json({ error: "AI recommendation failed." });
+        console.error("[SERVER ERROR] AI processing failed:", error);
+        res.status(400).json({ error: "Invalid input. AI only answers movie-related questions." });
     }
 });
 
@@ -176,25 +250,65 @@ async function getEpisodeDetails(serijaId, sezonaId, epizodaId) {
     }
 }
 
-app.get('/', (req, res) => {
-    const naziv = req.query.naziv || '';
-    const category = req.query.category || 'movie';
+app.get('/', async (req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
 
-    res.render('pocetna', { 
-        title: 'Filmovi Popis',
-        naziv: naziv,
-        category: category
-    });
+    try {
+        const [popularResponse, trendingResponse] = await Promise.all([
+            axios.get(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}`),
+            axios.get(`https://api.themoviedb.org/3/trending/movie/week?api_key=${apiKey}`)
+        ]);
+
+        res.render('pocetna', {
+            popularMovies: popularResponse.data.results.slice(0, 6),
+            trendingMovies: trendingResponse.data.results.slice(0, 6)
+        });
+    } catch (error) {
+        console.error("Error fetching movies:", error);
+        res.render('pocetna', { popularMovies: [], trendingMovies: [] });
+    }
 });
+
 
 
 app.get('/test', (req, res) => {
     res.render('partials/header', { session: req.session });
 });
 
+function containsInvalidCharactersEmail(text) {
+    const emailPattern = /^[a-zA-Z0-9@.]+$/;
+    return !emailPattern.test(text);
+}
+
+function containsInvalidCharactersUsername(text) {
+    const usernamePattern = /^[a-zA-Z0-9]+$/;
+    return !usernamePattern.test(text);
+}
+
+function containsInvalidCharactersGeneral(text) {
+    const invalidPattern = /[<>\/\(\)\{\}\[\]=;:]/g;
+    return text !== sanitizeHtml(text, { allowedTags: [], allowedAttributes: {} }) || invalidPattern.test(text);
+}
 
 app.post('/register', async (req, res) => {
     const { username, email_address, age, phone_number, gender, password, nadimak } = req.body;
+
+    if (containsInvalidCharactersUsername(username)) {
+        return res.status(400).send("Invalid characters in username. Only letters and numbers are allowed.");
+    }
+
+    if (containsInvalidCharactersEmail(email_address)) {
+        return res.status(400).send("Invalid email format.");
+    }
+
+    if (containsInvalidCharactersGeneral(nadimak) || containsInvalidCharactersGeneral(phone_number)) {
+        return res.status(400).send("Invalid characters detected in nickname or phone number.");
+    }
+    
+    const cleanUsername = sanitizeHtml(username);
+    const cleanEmail = sanitizeHtml(email_address);
+    const cleanPhone = sanitizeHtml(phone_number);
+    const cleanNadimak = sanitizeHtml(nadimak);
 
     const mysql = require('mysql');
     const connection = mysql.createConnection({
@@ -206,32 +320,40 @@ app.post('/register', async (req, res) => {
 
     connection.connect();
 
+    if (!cleanUsername || !cleanEmail || !password) {
+        return res.status(400).send("Invalid input detected.");
+    }
+
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        connection.query(
-            `INSERT INTO korisnici (username, email_address, age, phone_number, gender, password, nadimak, role, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'user', NOW())`,
-            [username, email_address, age, phone_number, gender, hashedPassword, nadimak || null],
-            (error, results) => {
-                connection.end();
-                if (error) {
-                    console.error('Greška prilikom registracije korisnika:', error);
-                    return res.status(500).send('Došlo je do greške prilikom registracije.');
-                }
-                res.redirect('/login');
+        const query = `
+            INSERT INTO korisnici (username, email_address, age, phone_number, gender, password, nadimak, role, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'user', NOW())`;
+
+        connection.query(query, [cleanUsername, cleanEmail, age, cleanPhone, gender, hashedPassword, cleanNadimak || null], (error) => {
+            if (error) {
+                console.error('Error during registration:', error);
+                return res.status(500).send('Error while registering user.');
             }
-        );
+            res.redirect('/login');
+        });
     } catch (err) {
-        console.error('Greška prilikom hashiranja lozinke:', err);
-        res.status(500).send('Greška na serveru.');
+        console.error('Password hashing error:', err);
+        res.status(500).send('Server error.');
     }
 });
 
 
 
 app.get('/register', (req, res) => {
-    res.render('register', { session: req.session });
+    res.render('register', 
+        { 
+            session: req.session,
+            korisnik: null,
+            csrfToken: req.csrfToken(),
+            isEdit: false
+        });
 });
 
 app.get('/login', (req, res) => {
@@ -239,7 +361,13 @@ app.get('/login', (req, res) => {
     res.render('login', { session: req.session, redirect });
 });
 app.post('/login', async (req, res) => {
-    const { username, password, redirect } = req.body;
+    const username = sanitizeHtml(req.body.username);
+    const password = req.body.password; 
+    const redirect = req.body.redirect;
+
+    if (containsInvalidCharactersUsername(username)) {
+        return res.status(400).send("Invalid characters in username. Only letters and numbers are allowed.");
+    }
 
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
@@ -358,6 +486,23 @@ app.post('/profile/update', (req, res) => {
         return res.status(401).send('Unauthorized');
     }
 
+    if (containsInvalidCharactersUsername(username)) {
+        return res.status(400).send("Invalid characters in username. Only letters and numbers are allowed.");
+    }
+
+    if (containsInvalidCharactersEmail(email_address)) {
+        return res.status(400).send("Invalid email format.");
+    }
+
+    if (containsInvalidCharactersGeneral(nadimak) || containsInvalidCharactersGeneral(phone_number)) {
+        return res.status(400).send("Invalid characters detected in nickname or phone number.");
+    }
+
+    const cleanUsername = sanitizeHtml(username);
+    const cleanEmail = sanitizeHtml(email_address);
+    const cleanPhone = sanitizeHtml(phone_number);
+    const cleanNadimak = sanitizeHtml(nadimak);
+
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
@@ -373,7 +518,7 @@ app.post('/profile/update', (req, res) => {
         WHERE id = ?
     `;
 
-    connection.query(query, [username, email_address, age, phone_number, gender, nadimak, korisnikId], (error) => {
+    connection.query(query, [cleanUsername, cleanEmail, age, cleanPhone, gender, cleanNadimak, korisnikId], (error) => {
         connection.end();
         if (error) {
             console.error('Error updating profile:', error);
@@ -905,7 +1050,21 @@ app.get('/film/:id', async (req, res) => {
 
     const filmUrl = `https://api.themoviedb.org/3/movie/${filmId}?api_key=${apiKey}&append_to_response=credits,videos,releases`;
     const recommendationsUrl = `https://api.themoviedb.org/3/movie/${filmId}/recommendations?api_key=${apiKey}`;
+    const watchProvidersUrl = `https://api.themoviedb.org/3/movie/${filmId}/watch/providers?api_key=${apiKey}`;
+    const watchProvidersResponse = await axios.get(watchProvidersUrl);
+    const watchProviders = watchProvidersResponse.data.results || {};
+    
+    const filteredProviders = {};
+    ['US', 'HR'].forEach(country => {
+        if (watchProviders[country]) {
+            filteredProviders[country] = {
+                providers: watchProviders[country].flatrate || [],
+                link: watchProviders[country].link || null
+            };
+        }
+    });
 
+    
     const mysql = require('mysql');
 
     try {
@@ -974,6 +1133,7 @@ app.get('/film/:id', async (req, res) => {
                                     userScoreColor,
                                     tmdbScoreColor,
                                     filmId,
+                                    watchProviders: filteredProviders,
                                 });
                             }
                         }
@@ -1028,6 +1188,16 @@ app.get('/film/:id/glumci', async (req, res) => {
 app.get('/film/:id/detalji', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const filmId = req.params.id;
+    const watchProvidersUrl = `https://api.themoviedb.org/3/movie/${filmId}/watch/providers?api_key=${apiKey}`;
+    const watchProvidersResponse = await axios.get(watchProvidersUrl);
+    const watchProviders = watchProvidersResponse.data.results || {};
+
+    const detailedProviders = {};
+    ['US', 'HR', 'GB', 'CA', 'DE', 'IT', 'FR', 'ES'].forEach(country => {
+        if (watchProviders[country]) {
+            detailedProviders[country] = watchProviders[country].flatrate || [];
+        }
+    });
 
     try {
         const filmResponse = await axios.get(`https://api.themoviedb.org/3/movie/${filmId}?api_key=${apiKey}&append_to_response=credits`);
@@ -1037,6 +1207,7 @@ app.get('/film/:id/detalji', async (req, res) => {
             film,
             userScore: film.vote_average.toFixed(1),
             userScoreColor: getScoreColor(film.vote_average),
+            watchProviders: detailedProviders,
         });
     } catch (error) {
         console.error("Error fetching movie details:", error);

@@ -93,6 +93,29 @@
                                         <%= `${Math.floor(film.runtime / 60)}h ${film.runtime % 60}m` %>
                                     </span> 
                                 </div>
+
+                                <div class="where-to-watch">
+                                    <h2>Where to Watch?</h2>
+                                    <% if (watchProviders && (watchProviders['US'] || watchProviders['HR'])) { %>
+                                        <% ['US', 'HR'].forEach(country => { %>
+                                            <% if (watchProviders[country] && watchProviders[country].providers.length > 0) { %>
+                                                <h3>Available in <%= country %>:</h3>
+                                                <ul>
+                                                    <% watchProviders[country].providers.forEach(provider => { %>
+                                                        <li>
+                                                            <a href="<%= watchProviders[country].link %>" target="_blank">
+                                                                <img src="https://image.tmdb.org/t/p/original<%= provider.logo_path %>" alt="<%= provider.provider_name %>">
+                                                                <%= provider.provider_name %>
+                                                            </a>
+                                                        </li>
+                                                    <% }) %>
+                                                </ul>
+                                            <% } %>
+                                        <% }) %>
+                                    <% } else { %>
+                                        <p>Currently unavailable for streaming.</p>
+                                    <% } %>
+                                </div>                                                             
                             </div>
                         </div>
                     </div>

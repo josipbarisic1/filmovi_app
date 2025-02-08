@@ -116,7 +116,7 @@ header ul li a:hover {
     border-radius: 12px; 
     transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
     max-width: 220px; 
-    border: 1px solid #ddd; 
+    border: 2px solid #2b8003; 
 }
 
 .movie-card:hover {
