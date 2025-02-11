@@ -146,7 +146,6 @@ app.post('/ai-recommend', async (req, res) => {
             throw new Error("Invalid query: AI only answers about movies/TV.");
         }
 
-        // **Ekstrakcija podataka pomoću regexa**
         const titleMatch = aiResponse.match(/Title:\s*"([^"]+)"/);
         const yearMatch = aiResponse.match(/Year:\s*(\d{4})/);
         const languageMatch = aiResponse.match(/Language:\s*([\w-]+)/);
@@ -162,10 +161,8 @@ app.post('/ai-recommend', async (req, res) => {
 
         console.log("[EXTRACTED DATA] Title:", recommendedTitle, "| Year:", recommendedYear, "| Language:", recommendedLanguage);
 
-        // **Ispravak jezika**
-        recommendedLanguage = "en-US"; // TMDB koristi "en-US" umjesto "English"
+        recommendedLanguage = "en-US";
 
-        // **Čišćenje naslova**
         recommendedTitle = recommendedTitle.replace(/[^a-zA-Z0-9 ]/g, "");
 
         const apiKey = process.env.TMDB_API_KEY;
@@ -183,7 +180,6 @@ app.post('/ai-recommend', async (req, res) => {
             return res.json({ recommendation: aiResponse, link: null });
         }
 
-        // **Filtriraj rezultate prema godini, dopuštajući odstupanje od ±1 godinu**
         const bestMatch = searchResults
             .filter(item => {
                 const itemYear = item.release_date ? parseInt(item.release_date.substr(0, 4)) :
@@ -293,6 +289,30 @@ function containsInvalidCharactersGeneral(text) {
 app.post('/register', async (req, res) => {
     const { username, email_address, age, phone_number, gender, password, nadimak } = req.body;
 
+    if (!username || !email_address || !password) {
+        return res.status(400).send("Username, email, and password are required.");
+    }
+
+    if (!/^[A-Za-z0-9]+$/.test(username)) {
+        return res.status(400).send("Invalid username. Only letters and numbers are allowed.");
+    }
+
+    if (password.length < 8) {
+        return res.status(400).send("Password must be at least 8 characters long.");
+    }
+
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email_address)) {
+        return res.status(400).send("Invalid email format.");
+    }
+
+    if (phone_number && !/^\+?[0-9]{7,15}$/.test(phone_number)) {
+        return res.status(400).send("Invalid phone number format.");
+    }
+
+    if (!nadimak || nadimak.length < 5) {
+        return res.status(400).send("Nickname must be at least 5 characters long.");
+    }
+    
     if (containsInvalidCharactersUsername(username)) {
         return res.status(400).send("Invalid characters in username. Only letters and numbers are allowed.");
     }
@@ -324,24 +344,43 @@ app.post('/register', async (req, res) => {
         return res.status(400).send("Invalid input detected.");
     }
 
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
+    connection.query(`SELECT * FROM korisnici WHERE username = ? OR email_address = ?`, [username, email_address], async (error, results) => {
+        if (error) {
+            console.error('Error checking username/email:', error);
+            connection.end();
+            return res.status(500).send('Database error.');
+        }
+    
+        if (results.length > 0) {
+            connection.end();
+            let errorMessage = results.some(user => user.username === username) ? "Username already taken." : "Email already registered.";
+            return res.render('register', {
+                korisnik: null,
+                csrfToken: req.csrfToken(),
+                isEdit: false,
+                errorMessage
+            });
+        }
 
-        const query = `
-            INSERT INTO korisnici (username, email_address, age, phone_number, gender, password, nadimak, role, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'user', NOW())`;
+        try {
+            const hashedPassword = await bcrypt.hash(password, 10);
 
-        connection.query(query, [cleanUsername, cleanEmail, age, cleanPhone, gender, hashedPassword, cleanNadimak || null], (error) => {
-            if (error) {
-                console.error('Error during registration:', error);
-                return res.status(500).send('Error while registering user.');
-            }
-            res.redirect('/login');
-        });
-    } catch (err) {
-        console.error('Password hashing error:', err);
-        res.status(500).send('Server error.');
-    }
+            const query = `
+                INSERT INTO korisnici (username, email_address, age, phone_number, gender, password, nadimak, role, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'user', NOW())`;
+
+            connection.query(query, [cleanUsername, cleanEmail, age, cleanPhone, gender, hashedPassword, cleanNadimak || null], (error) => {
+                if (error) {
+                    console.error('Error during registration:', error);
+                    return res.status(500).send('Error while registering user.');
+                }
+                res.redirect('/login');
+            });
+        } catch (err) {
+            console.error('Password hashing error:', err);
+            res.status(500).send('Server error.');
+        }
+    });
 });
 
 
@@ -352,18 +391,25 @@ app.get('/register', (req, res) => {
             session: req.session,
             korisnik: null,
             csrfToken: req.csrfToken(),
-            isEdit: false
+            isEdit: false,
+            errorMessage: null,
         });
 });
 
 app.get('/login', (req, res) => {
-    const redirect = req.query.redirect || req.headers.referer || '/';
+    let redirect = req.query.redirect || req.headers.referer || '/';
+    const blockedRedirects = ['/register', '/login'];
+    
+    if (blockedRedirects.includes(new URL(redirect, 'http://localhost').pathname)) {
+        redirect = '/';
+    }
+
     res.render('login', { session: req.session, redirect });
 });
 app.post('/login', async (req, res) => {
     const username = sanitizeHtml(req.body.username);
     const password = req.body.password; 
-    const redirect = req.body.redirect;
+    let redirect = req.body.redirect;
 
     if (containsInvalidCharactersUsername(username)) {
         return res.status(400).send("Invalid characters in username. Only letters and numbers are allowed.");
@@ -395,6 +441,11 @@ app.post('/login', async (req, res) => {
                     req.session.userId = user.id;
                     req.session.username = user.username;
                     req.session.role = user.role;
+
+                    const blockedRedirects = ['/register', '/login'];
+                    if (blockedRedirects.includes(new URL(redirect, 'http://localhost').pathname)) {
+                        redirect = '/';
+                    }
                     res.redirect(redirect || '/');
                 } else {
                     res.status(401).send('Invalid username or password.');
@@ -728,26 +779,29 @@ app.post('/pretrazi', async (req, res) => {
 });
 
 // Funkcija za generiranje paginacije
-/* 
-function generatePagination(currentPage, totalPages) {
-    let pagination = [];
 
-    if (totalPages <= 5) {
-        for (let i = 1; i <= totalPages; i++) {
-            pagination.push(i);
-        }
-    } else {
-        if (currentPage <= 3) {
-            pagination = [1, 2, 3, 4, 5, '...', totalPages];
-        } else if (currentPage >= totalPages - 2) {
-            pagination = [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-        } else {
-            pagination = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
-        }
+function generatePagination(currentPage, totalPages) {
+    const maxVisiblePages = 5;
+    let pages = [];
+
+    if (totalPages <= 1) return [];
+
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (startPage > 1) pages.push(1);
+    if (startPage > 2) pages.push("...");
+
+    for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
     }
 
-    return pagination;
-}*/
+    if (endPage < totalPages - 1) pages.push("...");
+    if (endPage < totalPages) pages.push(totalPages);
+
+    return pages;
+}
+
 
 const generateUrl = (base, sort) => {
     let sortBy = '';
@@ -770,6 +824,7 @@ const generateUrl = (base, sort) => {
     return `${base}&sort_by=${sortBy}`;
 };
 
+/* 
 const generatePagination = (currentPage, totalPages) => {
     const delta = 2;
     const range = [];
@@ -794,16 +849,14 @@ const generatePagination = (currentPage, totalPages) => {
         l = i;
     }
     return rangeWithDots;
-};
+}; */
 
-const updateRenderParams = async (url, category, sort, req, res) => {
+const updateRenderParams = async (url, title, category, req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const page = parseInt(req.query.page) || 1;
 
     try {
         const response = await axios.get(`${url}&page=${page}`);
-        const genreResponse = await axios.get(`https://api.themoviedb.org/3/genre/${category}/list?api_key=${apiKey}`);
-        
         const data = response.data;
         const totalPages = data.total_pages;
 
@@ -814,20 +867,14 @@ const updateRenderParams = async (url, category, sort, req, res) => {
 
         data.results = filteredResults;
 
-        const pagination = generatePagination(page, totalPages);
-
-        res.render('pretrazi_film', {
+        res.render('top_lista', {
+            title,
             data,
-            naziv: '',
             category,
-            genres: genreResponse.data.genres,
-            pagination,
             page,
             totalPages,
-            selectedGenre: '',
-            selectedYear: '',
-            language: '',
-            sort,
+            loadMore: page < totalPages,
+            nextPage: page + 1
         });
     } catch (error) {
         console.error(error);
@@ -835,6 +882,48 @@ const updateRenderParams = async (url, category, sort, req, res) => {
     }
 };
 
+app.get('/:category/latest', async (req, res) => {
+    const category = req.params.category;
+    const apiKey = process.env.TMDB_API_KEY;
+    const page = parseInt(req.query.page) || 1;
+
+    let url, title;
+    if (category === 'movie') {
+        url = `https://api.themoviedb.org/3/movie/now_playing?api_key=${apiKey}&page=${page}`;
+        title = "Latest Movies";
+    } else if (category === 'tv') {
+        url = `https://api.themoviedb.org/3/tv/airing_today?api_key=${apiKey}&page=${page}`;
+        title = "Latest TV Shows";
+    } else {
+        return res.status(400).send('Nevažeća kategorija.');
+    }
+
+    await updateRenderParams(url, title, category, req, res);
+});
+
+app.get('/:category/most-viewed', async (req, res) => {
+    const category = req.params.category;
+    const apiKey = process.env.TMDB_API_KEY;
+    const url = `https://api.themoviedb.org/3/discover/${category}?api_key=${apiKey}&sort_by=popularity.desc`;
+    await updateRenderParams(url, `Most Viewed ${category === 'movie' ? 'Movies' : 'TV Shows'}`, category, req, res);
+});
+
+app.get('/:category/top-rated', async (req, res) => {
+    const category = req.params.category;
+    const apiKey = process.env.TMDB_API_KEY;
+    const url = `https://api.themoviedb.org/3/${category}/top_rated?api_key=${apiKey}`;
+    await updateRenderParams(url, `Top Rated ${category === 'movie' ? 'Movies' : 'TV Shows'}`, category, req, res);
+});
+
+app.get('/:category/alphabetical', async (req, res) => {
+    const category = req.params.category;
+    const apiKey = process.env.TMDB_API_KEY;
+    const url = `https://api.themoviedb.org/3/discover/${category}?api_key=${apiKey}&sort_by=original_title.asc`;
+    await updateRenderParams(url, `Alphabetical ${category === 'movie' ? 'Movies' : 'TV Shows'}`, category, req, res);
+});
+
+
+/* 
 app.get('/:category/latest', async (req, res) => {
     const category = req.params.category;
     const apiKey = process.env.TMDB_API_KEY;
@@ -889,7 +978,7 @@ app.get('/tv/top-rated', async (req, res) => {
     const url = `https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&sort_by=vote_average.desc`;
     await updateRenderParams(url, 'tv', 'top_rated', req, res);
 });
-
+*/
 app.post('/popisi/kreiraj', async (req, res) => {
     const { naziv, tip_popisa } = req.body;
     const userId = req.session.userId;

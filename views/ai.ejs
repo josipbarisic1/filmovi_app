@@ -25,7 +25,6 @@
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
 
-        // Prikaži korisnikovu poruku odmah u plavoj kartici
         appendMessage("user", userMessage);
 
         document.getElementById("preferences").value = "";
@@ -71,7 +70,7 @@
 
     function typeWriterEffect(sender, text, link = null) {
         const messageSpan = appendMessage(sender, text, link);
-        if (!messageSpan) return; // Ako je korisnik, nema efekta
+        if (!messageSpan) return;
 
         let index = 0;
         const speed = Math.max(15, 2000 / text.length);
