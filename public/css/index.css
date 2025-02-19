@@ -52,6 +52,7 @@
     align-items: center;
     gap: 10px;
     margin-top: 20px;
+    flex-wrap: wrap;
 }
 
 .search-form input, .search-form select, .search-form button {
@@ -61,19 +62,25 @@
 }
 
 .search-form input {
-    width: 40%;
+    width: 230px;
     border: 1px solid #ccc;
 }
 
 .search-form select {
-    width: 20%;
+    width: 100px;
     border: 1px solid #ccc;
 }
 
 .search-form button {
-    background-color: #007BFF;
+    background-color: #569108;
     color: white;
     cursor: pointer;
+}
+
+.popular-movies h2{
+    margin-bottom: 0;
+    margin-top: 30px;
+    padding-left: 20px;
 }
 
 .movie-grid {
@@ -90,7 +97,7 @@
     border-radius: 12px; 
     transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
     max-width: 220px; 
-    border: 1px solid #ddd; 
+    border: 2px solid #2b8003; 
 }
 
 .movie-card:hover {
@@ -135,6 +142,11 @@
     overflow: hidden;
 }
 
+.movie-details h2{
+    margin: 0;
+    padding: 0;
+}
+
 .movie-details p{
     margin-top: 10px;
     font-size: 0.9rem;
@@ -176,10 +188,22 @@
     margin-bottom: 10px;
 }
 
-.search-form {
-    display: flex;
-    gap: 10px;
+.ai-chat-link {
+    text-align: center;
+    padding-top: 20px;
+    font-size: 14px;
 }
+
+.ai-chat-link a {
+    color: #64ff80;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.ai-chat-link a:hover {
+    text-decoration: underline;
+}
+
 
 
 @media (max-width: 480px) {

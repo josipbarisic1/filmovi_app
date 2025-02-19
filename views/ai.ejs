@@ -4,6 +4,9 @@
     <link rel="stylesheet" href="/css/ai.css">
 </head>
 
+<%- include('partials/header') %>
+
+
 <div class="card">
     <div class="chat-header">Movie AI Chat</div>
     <div class="chat-window">
@@ -14,6 +17,9 @@
         <button id="ai-submit" class="send-button">Send</button>
     </div>
 </div>
+
+<%- include('partials/footer') %>
+
 
 <script>
     document.getElementById("ai-submit").addEventListener("click", async () => {
@@ -69,21 +75,27 @@
     }
 
     function typeWriterEffect(sender, text, link = null) {
-        const messageSpan = appendMessage(sender, text, link);
+        const formattedText = text.replace(/Title:/g, "<strong>Title:</strong>")
+                                .replace(/Year:/g, "<br><strong>Year:</strong>")
+                                .replace(/Language:/g, "<br><strong>Language:</strong>")
+                                .replace(/Reason:/g, "<br><strong>Reason:</strong>");
+
+        const messageSpan = appendMessage(sender, "", link);
         if (!messageSpan) return;
 
         let index = 0;
-        const speed = Math.max(15, 2000 / text.length);
+        const speed = Math.max(15, 2000 / formattedText.length);
+        let tempText = "";
 
         const interval = setInterval(() => {
-            if (index < text.length) {
-                messageSpan.textContent += text[index];
+            if (index < formattedText.length) {
+                tempText += formattedText[index];
+                messageSpan.innerHTML = tempText; 
                 index++;
             } else {
                 clearInterval(interval);
             }
         }, speed);
     }
-
 
 </script>

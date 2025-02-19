@@ -108,16 +108,44 @@ app.get('/ai-models', async (req, res) => {
     }
 });
 
-app.get('/ai', (req, res) => {
+function requireLogin(req, res, next) {
+    if (!req.session.userId) {
+        return res.status(403).json({ error: "You must be logged in to use AI recommendations." });
+    }
+    next();
+}
+
+app.get('/ai', requireLogin, (req, res) => {
     res.render('ai', { csrfToken: req.csrfToken() });
 });
 
-app.post('/ai-recommend', async (req, res) => {
-    const { userMessage } = req.body;
+const aiRequests = {};
+
+app.post('/ai-recommend', requireLogin, async (req, res) => {    const { userMessage } = req.body;
+    const userId = req.session.userId;
+    const userRole = req.session.role || "user"; 
 
     if (!userMessage) {
         console.log("[ERROR] Empty user message.");
         return res.status(400).json({ error: "Message is required." });
+    }
+
+    if (userRole !== "admin") {
+        const today = new Date().toISOString().split("T")[0];
+
+        if (!aiRequests[userId]) {
+            aiRequests[userId] = { date: today, count: 0 };
+        }
+
+        if (aiRequests[userId].date !== today) {
+            aiRequests[userId] = { date: today, count: 0 };
+        }
+
+        if (aiRequests[userId].count >= 3) {
+            return res.status(429).json({ error: "You have reached the daily AI request limit (3 requests per day)." });
+        }
+
+        aiRequests[userId].count++;
     }
 
     try {
@@ -152,7 +180,7 @@ app.post('/ai-recommend', async (req, res) => {
 
         if (!titleMatch || !yearMatch || !languageMatch) {
             console.log("[ERROR] Could not extract title/year/language from AI response.");
-            return res.json({ recommendation: aiResponse, link: null });
+            return res.json({ recommendation: "I'm sorry, but I cannot assist with that.", link: null });
         }
 
         let recommendedTitle = titleMatch[1].trim();
@@ -184,14 +212,15 @@ app.post('/ai-recommend', async (req, res) => {
             .filter(item => {
                 const itemYear = item.release_date ? parseInt(item.release_date.substr(0, 4)) :
                                  item.first_air_date ? parseInt(item.first_air_date.substr(0, 4)) : null;
-                return itemYear && Math.abs(itemYear - recommendedYear) <= 1;
+                return itemYear && Math.abs(itemYear - recommendedYear) <= 3;
             })
             .sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))[0];
 
         if (!bestMatch) {
             console.log("[ERROR] No matching movie/TV show found for extracted year.");
-            return res.json({ recommendation: aiResponse, link: null });
+            return res.json({ recommendation: "Something went wrong, please try again.", link: null });
         }
+            
 
         console.log("[MATCH FOUND] ID:", bestMatch.id, "| Media Type:", bestMatch.media_type);
 
@@ -778,8 +807,6 @@ app.post('/pretrazi', async (req, res) => {
     }
 });
 
-// Funkcija za generiranje paginacije
-
 function generatePagination(currentPage, totalPages) {
     const maxVisiblePages = 5;
     let pages = [];
@@ -1143,15 +1170,16 @@ app.get('/film/:id', async (req, res) => {
     const watchProvidersResponse = await axios.get(watchProvidersUrl);
     const watchProviders = watchProvidersResponse.data.results || {};
     
-    const filteredProviders = {};
-    ['US', 'HR'].forEach(country => {
-        if (watchProviders[country]) {
-            filteredProviders[country] = {
-                providers: watchProviders[country].flatrate || [],
-                link: watchProviders[country].link || null
-            };
-        }
-    });
+    let userCountry = req.headers["accept-language"]?.match(/-[A-Z]{2}/)?.[0]?.replace("-", "") || "US";
+    if (!watchProviders[userCountry]) {
+        userCountry = watchProviders["US"] ? "US" : Object.keys(watchProviders)[0] || "US";
+    }
+
+    const filteredProviders = {
+        country: userCountry,
+        providers: watchProviders[userCountry]?.flatrate || [],
+        link: watchProviders[userCountry]?.link || null
+    };
 
     
     const mysql = require('mysql');

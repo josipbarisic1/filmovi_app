@@ -228,6 +228,10 @@ header ul li a:hover {
     border: 1px solid #004a99;
 }
 
+.top-list-h1{
+    padding: 10px 0 0 30px;   
+}
+
 @media (max-width: 480px) {
     .movie-grid {
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

@@ -68,21 +68,17 @@
             const listContainer = document.getElementById("user-lists");
             const seeAllLists = document.getElementById("see-all-lists");
     
-            // Prikaz sekcija ovisno o kliku
             tabs.forEach(tab => {
                 tab.addEventListener("click", function (event) {
                     event.preventDefault();
                     const section = this.getAttribute("data-section");
     
-                    // Sakrijemo sve sekcije
                     sections.forEach(sec => sec.classList.add("hidden"));
                     document.getElementById(section).classList.remove("hidden");
     
-                    // Resetiramo aktivni tab
                     tabs.forEach(t => t.classList.remove("active"));
                     this.classList.add("active");
     
-                    // Ako je "My Reviews" -> prikaži Movies/TV Shows, inače sakrij
                     if (section === "reviews") {
                         reviewsNav.classList.remove("hidden");
                     } else {
@@ -91,13 +87,12 @@
                 });
             });
     
-            // Dohvaćanje popisa
             async function fetchLists() {
                 try {
                     const response = await fetch('/profile/lists');
                     const lists = await response.json();
     
-                    listContainer.innerHTML = ""; // Očisti prethodne liste
+                    listContainer.innerHTML = "";
     
                     if (lists.length === 0) {
                         listContainer.innerHTML = "<p>No lists available.</p>";
@@ -114,14 +109,13 @@
                 }
             }
     
-            fetchLists(); // Pokreni dohvaćanje popisa odmah po učitavanju
+            fetchLists();
     
-            // Dohvaćanje recenzija
             async function fetchReviews() {
                 try {
                     const response = await fetch('/profile/reviews');
                     const reviews = await response.json();
-                    reviewContainer.innerHTML = ""; // Očisti prethodne recenzije
+                    reviewContainer.innerHTML = "";
     
                     if (reviews.length === 0) {
                         reviewContainer.innerHTML = "<p>No reviews available.</p>";
@@ -165,9 +159,8 @@
                 }
             }
     
-            fetchReviews(); // Pokreni dohvaćanje recenzija odmah po učitavanju
+            fetchReviews();
     
-            // Filtriranje Movies/TV Shows
             const reviewTabs = document.querySelectorAll("[data-review-type]");
             reviewTabs.forEach(tab => {
                 tab.addEventListener("click", function (event) {

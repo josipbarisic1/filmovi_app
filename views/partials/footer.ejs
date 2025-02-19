@@ -26,4 +26,149 @@
             </div>
         </div>
     </div>
+
+    <div id="ai-chat-bubble">
+        <div id="chat-bubble-icon">💬</div>
+        <div id="ai-chat-container" class="hidden">
+            <div class="ai-chat-header">
+                <span>🎬 Movie AI Chat</span>
+                <button id="close-chat">✖</button>
+            </div>
+            <div id="chat-messages"></div>
+            <% if (session.userId) { %>
+                <div class="chat-input">
+                    <input type="text" id="ai-input" placeholder="Ask AI for recommendations...">
+                    <button id="send-ai">Send</button>
+                </div>
+            <% } else { %>
+                <p class="login-message">Login to chat with AI</p>
+            <% } %>
+        </div>
+        <div id="chat-bubble-tooltip">Ask AI for recommendations!</div>
+    </div>
+    
 </footer>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const chatBubble = document.getElementById("chat-bubble-icon");
+        const chatContainer = document.getElementById("ai-chat-container");
+        const closeChat = document.getElementById("close-chat");
+
+        chatBubble.addEventListener("click", function () {
+            chatContainer.classList.toggle("hidden");
+        });
+
+        closeChat.addEventListener("click", function () {
+            chatContainer.classList.add("hidden");
+        });
+
+        const sendButton = document.getElementById("send-ai");
+        const aiInput = document.getElementById("ai-input");
+        const chatMessages = document.getElementById("chat-messages");
+
+        if (sendButton) {
+            sendButton.addEventListener("click", async () => {
+                const userMessage = aiInput.value.trim();
+                if (!userMessage) return;
+
+                appendMessage("user", userMessage); 
+
+                aiInput.value = "";
+
+                try {
+                    const response = await fetch("/ai-recommend", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "CSRF-Token": "<%= csrfToken %>"
+                        },
+                        body: JSON.stringify({ userMessage })
+                    });
+
+                    const data = await response.json();
+                    if (data.error) {
+                        appendMessage("ai", "Error: " + data.error);
+                    } else {
+                        typeWriterEffect("ai", data.recommendation, data.link);
+                    }
+                } catch (error) {
+                    console.error("AI Chat Error:", error);
+                    appendMessage("ai", "Error getting recommendation.");
+                }
+            });
+        }
+    });
+
+    function appendMessage(sender, text, link = null) {
+        const chatMessages = document.getElementById("chat-messages");
+        const messageItem = document.createElement("div");
+        
+        messageItem.classList.add(sender === "user" ? "user-message" : "ai-message");
+
+        if (link && sender === "ai") {
+            messageItem.innerHTML = `<span class="typing-text"></span> <br><a href="${link}" class="ai-link" target="_blank">🔗 Click Here</a>`;
+        } else {
+            messageItem.textContent = text;
+        }
+
+        chatMessages.appendChild(messageItem);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        return messageItem.querySelector(".typing-text");
+    }
+
+
+    function typeWriterEffect(sender, text, link = null) {
+
+
+        const formattedText = text.replace(/Title:/g, "<strong>Title:</strong>")
+                                .replace(/Year:/g, "<br><strong>Year:</strong>")
+                                .replace(/Language:/g, "<br><strong>Language:</strong>")
+                                .replace(/Reason:/g, "<br><strong>Reason:</strong>");
+
+        const messageSpan = appendMessage(sender, "", link);
+
+        console.log("Starting typewriter for:", sender);
+        console.log("Formatted text:", formattedText);
+        console.log("Message span:", messageSpan);
+        if (!messageSpan) return;
+
+        let index = 0;
+        const speed = Math.max(15, 2000 / formattedText.length);
+        let tempText = "";
+
+        const interval = setInterval(() => {
+            if (index < formattedText.length) {
+                tempText += formattedText[index];
+                messageSpan.innerHTML = tempText; 
+                index++;
+            } else {
+                clearInterval(interval);
+            }
+        }, speed);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const chatContainer = document.getElementById("ai-chat-container");
+        const loginMessage = document.querySelector(".login-message");
+
+        if (loginMessage) {
+            chatContainer.style.maxHeight = "140px";
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const aiChatBubble = document.getElementById("chat-bubble-icon");
+        const aiChatLink = document.getElementById("open-ai-chat");
+
+        if (aiChatLink) {
+            aiChatLink.addEventListener("click", function (e) {
+                e.preventDefault();
+                aiChatBubble.click();
+            });
+        }
+    });
+
+
+</script>
