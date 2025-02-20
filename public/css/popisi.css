@@ -1,0 +1,15 @@
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.list-item {
+    text-align: center;
+}
+
+.list-item img {
+    width: 100%;
+    border-radius: 8px;
+}

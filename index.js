@@ -1006,61 +1006,8 @@ app.get('/tv/top-rated', async (req, res) => {
     await updateRenderParams(url, 'tv', 'top_rated', req, res);
 });
 */
-app.post('/popisi/kreiraj', async (req, res) => {
-    const { naziv, tip_popisa } = req.body;
-    const userId = req.session.userId;
-    const username = req.session.username;
 
-    if (!username) return res.status(401).send('Morate biti prijavljeni.');
-
-    const mysql = require('mysql');
-    const connection = mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-    });
-
-    connection.connect();
-
-    const sql = 'INSERT INTO popisi (naziv, tip_popisa, korisnik_id, sadrzaj) VALUES (?, ?, ?, ?)';
-    connection.query(sql, [naziv, tip_popisa, userId, ''], (err) => {
-        connection.end();
-        if (err) {
-            console.error('Greška prilikom stvaranja popisa:', err);
-            return res.status(500).send('Pogreška prilikom stvaranja popisa.');
-        }
-        res.redirect('/popisi');
-    });
-});
-
-app.get('/popisi', async (req, res) => {
-    const userId = req.session.userId;
-    const username = req.session.username;
-
-    if (!username) return res.status(401).send('Morate biti prijavljeni.');
-
-    const mysql = require('mysql');
-    const connection = mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-    });
-
-    connection.connect();
-
-    const sql = 'SELECT * FROM popisi WHERE korisnik_id = ?';
-    connection.query(sql, [userId], (err, results) => {
-        connection.end();
-        if (err) {
-            console.error('Greška prilikom dohvaćanja popisa:', err);
-            return res.status(500).send('Pogreška prilikom dohvaćanja popisa.');
-        }
-        res.render('popisi', { popisi: results });
-    });
-});
-
+/*
 app.post('/popisi/dodaj', (req, res) => {
     const { popis_id, sadrzaj_id } = req.body;
     const korisnikId = req.session.userId;
@@ -1118,10 +1065,236 @@ app.post('/popisi/dodaj', (req, res) => {
         });
     });
 });
+*/
+app.post('/popisi/kreiraj', async (req, res) => {
+    const { naziv, tip_popisa } = req.body;
+    const userId = req.session.userId;
+    const username = req.session.username;
 
+    if (!username) return res.status(401).send('Morate biti prijavljeni.');
 
+    const mysql = require('mysql');
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
 
+    connection.connect();
 
+    const sql = 'INSERT INTO popisi (naziv, tip_popisa, korisnik_id, sadrzaj) VALUES (?, ?, ?, ?)';
+    connection.query(sql, [naziv, tip_popisa, userId, '[]'], (err) => {
+        connection.end();
+        if (err) {
+            console.error('Greška prilikom stvaranja popisa:', err);
+            return res.status(500).send('Pogreška prilikom stvaranja popisa.');
+        }
+        res.redirect('/popisi');
+    });
+});
+
+app.get('/popisi', async (req, res) => {
+    const userId = req.session.userId;
+    const username = req.session.username;
+
+    if (!username) return res.status(401).send('Morate biti prijavljeni.');
+
+    const mysql = require('mysql');
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const sql = 'SELECT id, naziv, tip_popisa, sadrzaj, JSON_LENGTH(sadrzaj) AS broj_stavki, created_at FROM popisi WHERE korisnik_id = ?';
+
+    connection.query(sql, [userId], async (err, results) => {
+        connection.end();
+        if (err) {
+            console.error('❌ Greška prilikom dohvaćanja popisa:', err);
+            return res.status(500).send('Pogreška prilikom dohvaćanja popisa.');
+        }
+
+        // Procesuiramo svaki popis i dohvaćamo podatke za svaki film/seriju
+        for (let popis of results) {
+            try {
+                popis.sadrzaj = popis.sadrzaj ? JSON.parse(popis.sadrzaj) : [];
+
+                // Dohvaćamo detalje filmova/serija sa TMDB-a
+                for (let item of popis.sadrzaj) {
+                    const apiUrl = item.tip === "film"
+                        ? `https://api.themoviedb.org/3/movie/${item.id}?api_key=${process.env.TMDB_API_KEY}`
+                        : `https://api.themoviedb.org/3/tv/${item.id}?api_key=${process.env.TMDB_API_KEY}`;
+
+                    try {
+                        const response = await axios.get(apiUrl);
+                        item.naziv = response.data.title || response.data.name;
+                        item.poster_path = response.data.poster_path;
+                    } catch (apiError) {
+                        console.error(`⚠️ TMDB API greška (${item.id}):`, apiError);
+                        item.naziv = "Nepoznato";
+                        item.poster_path = null;
+                    }
+                }
+            } catch (jsonError) {
+                console.error("⚠️ Greška pri parsiranju JSON-a u popisu:", jsonError);
+                popis.sadrzaj = [];
+            }
+        }
+
+        res.render('popisi', { popisi: results });
+    });
+});
+
+app.post("/popisi/dodaj", requireLogin, async (req, res) => {
+    const { popis_id, sadrzaj_id, tip_sadrzaja } = req.body;
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    try {
+        connection.query(
+            "SELECT sadrzaj FROM popisi WHERE id = ? AND korisnik_id = ?",
+            [popis_id, req.session.userId],
+            (err, results) => {
+                if (err) {
+                    console.error("Greška pri dohvaćanju popisa:", err);
+                    connection.end();
+                    return res.status(500).send("Greška pri dohvaćanju popisa.");
+                }
+
+                if (results.length === 0) {
+                    connection.end();
+                    return res.status(404).send("Popis nije pronađen.");
+                }
+
+                let sadrzaj = [];
+                if (results[0].sadrzaj && results[0].sadrzaj !== "null") {
+                    try {
+                        sadrzaj = JSON.parse(results[0].sadrzaj);
+                    } catch (parseError) {
+                        console.error("Greška pri parsiranju JSON-a:", parseError);
+                        sadrzaj = [];
+                    }
+                }
+
+                const alreadyExists = sadrzaj.some(item => item.id == sadrzaj_id && item.tip === tip_sadrzaja);
+                if (alreadyExists) {
+                    connection.end();
+                    return res.status(400).send("Već se nalazi u popisu.");
+                }
+
+                sadrzaj.push({ id: sadrzaj_id, tip: tip_sadrzaja });
+
+                connection.query(
+                    "UPDATE popisi SET sadrzaj = ? WHERE id = ?",
+                    [JSON.stringify(sadrzaj), popis_id],
+                    (updateErr) => {
+                        connection.end();
+                        if (updateErr) {
+                            console.error("Greška pri ažuriranju popisa:", updateErr);
+                            return res.status(500).send("Greška prilikom ažuriranja popisa.");
+                        }
+                        res.redirect("/popisi");
+                    }
+                );
+            }
+        );
+    } catch (error) {
+        console.error("Greška:", error);
+        connection.end();
+        res.status(500).send("Greška na serveru.");
+    }
+});
+
+app.post("/popisi/obrisi", requireLogin, (req, res) => {
+    const { popis_id } = req.body;
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    connection.query(
+        "DELETE FROM popisi WHERE id = ? AND korisnik_id = ?",
+        [popis_id, req.session.userId],
+        (err) => {
+            connection.end();
+            if (err) {
+                console.error("Greška pri brisanju popisa:", err);
+                return res.status(500).send("Greška prilikom brisanja popisa.");
+            }
+            res.redirect("/popisi");
+        }
+    );
+});
+
+app.post("/popisi/obrisi-stavku", requireLogin, async (req, res) => {
+    const { popis_id, sadrzaj_id, tip_sadrzaja } = req.body;
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    try {
+        connection.query(
+            "SELECT sadrzaj FROM popisi WHERE id = ? AND korisnik_id = ?",
+            [popis_id, req.session.userId],
+            (err, results) => {
+                if (err) {
+                    console.error("Greška pri dohvaćanju popisa:", err);
+                    connection.end();
+                    return res.status(500).send("Greška pri dohvaćanju popisa.");
+                }
+
+                if (results.length === 0) {
+                    connection.end();
+                    return res.status(404).send("Popis nije pronađen.");
+                }
+
+                let sadrzaj = results[0].sadrzaj ? JSON.parse(results[0].sadrzaj) : [];
+
+                sadrzaj = sadrzaj.filter(item => !(item.id == sadrzaj_id && item.tip === tip_sadrzaja));
+
+                connection.query(
+                    "UPDATE popisi SET sadrzaj = ? WHERE id = ?",
+                    [JSON.stringify(sadrzaj), popis_id],
+                    (updateErr) => {
+                        connection.end();
+                        if (updateErr) {
+                            console.error("Greška pri ažuriranju popisa:", updateErr);
+                            return res.status(500).send("Greška prilikom ažuriranja popisa.");
+                        }
+                        res.redirect("/popisi");
+                    }
+                );
+            }
+        );
+    } catch (error) {
+        console.error("Greška:", error);
+        connection.end();
+        res.status(500).send("Greška na serveru.");
+    }
+});
 
 app.get('/api/popisi', async (req, res) => {
     const userId = req.session.userId;
@@ -1143,7 +1316,7 @@ app.get('/api/popisi', async (req, res) => {
     const params = [userId];
 
     if (tip_popisa) {
-        sql += ' AND tip_popisa = ?';
+        sql += ' AND (tip_popisa = ? OR tip_popisa = "mixed")';
         params.push(tip_popisa);
     }
 

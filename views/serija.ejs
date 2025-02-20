@@ -298,13 +298,11 @@
                         listOptions.innerHTML = '<p>No lists available.</p>';
                     } else {
                         popisi.forEach(popis => {
-                            if (popis.tip_popisa === 'serije') { 
-                                const listItem = document.createElement('div');
-                                listItem.className = 'dropdown-option';
-                                listItem.innerText = popis.naziv;
-                                listItem.onclick = () => addToList(popis.id);
-                                listOptions.appendChild(listItem);
-                            }
+                            const listItem = document.createElement('div');
+                            listItem.className = 'dropdown-option';
+                            listItem.innerText = popis.naziv;
+                            listItem.onclick = () => addToList(popis.id, 'serija');
+                            listOptions.appendChild(listItem);
                         });
                     }
                 } catch (error) {
@@ -312,6 +310,8 @@
                 }
             }
         });
+
+
 
         function showPopupMessage(message, isSuccess) {
             const popup = document.getElementById('popup-message');
@@ -324,7 +324,7 @@
             }, 4000);
         }
 
-        async function addToList(listId) {
+        async function addToList(listId, tipSadrzaja) {
             const contentId = '<%= serija.id %>';
 
             try {
@@ -334,7 +334,7 @@
                         'Content-Type': 'application/json',
                         'CSRF-Token': csrfToken
                     },
-                    body: JSON.stringify({ popis_id: listId, sadrzaj_id: contentId }),
+                    body: JSON.stringify({ popis_id: listId, sadrzaj_id: contentId, tip_sadrzaja: tipSadrzaja }),                    
                 });
 
                 if (response.ok) {

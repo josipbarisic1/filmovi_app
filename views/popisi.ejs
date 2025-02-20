@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Moji Popisi</title>
+    <link rel="stylesheet" href="/css/popisi.css">
 </head>
 <body>
+    
+    <%- include('partials/header') %>
+
     <h1>Moji Popisi</h1>
 
     <form action="/popisi/kreiraj" method="POST">
@@ -13,23 +17,55 @@
         <select name="tip_popisa">
             <option value="filmovi">Filmovi</option>
             <option value="serije">Serije</option>
+            <option value="mixed">Mješoviti</option>
         </select>
         <button type="submit">Kreiraj Popis</button>
     </form>
 
     <h2>Postojeći Popisi</h2>
     <% popisi.forEach(popis => { %>
-        <div>
+        <div class="list-card">
             <h3><%= popis.naziv %> (<%= popis.tip_popisa %>)</h3>
-            <p>Sadržaj: <%= popis.sadrzaj %> (ID-ovi)</p>
+            <p><strong>Broj stavki:</strong> <%= popis.broj_stavki %></p>
+            <p><strong>Datum kreiranja:</strong> <%= new Date(popis.created_at).toLocaleDateString() %></p>
 
-            <form action="/popisi/dodaj" method="POST">
+            <!-- Dugme za brisanje cijelog popisa -->
+            <form action="/popisi/obrisi" method="POST" onsubmit="return confirm('Jeste li sigurni da želite obrisati ovaj popis?');">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <input type="hidden" name="popis_id" value="<%= popis.id %>">
-                <input type="number" name="sadrzaj_id" placeholder="ID filma/serije" required>
-                <button type="submit">Dodaj</button>
+                <button type="submit" class="delete-list">Obriši Popis</button>
             </form>
+
+            <div class="list-items">
+                <% if (popis.sadrzaj.length > 0) { %>
+                    <div class="grid-container">
+                        <% popis.sadrzaj.forEach(item => { %>
+                            <div class="list-item">
+                                <a href="/<%= item.tip === 'film' ? 'film' : 'serija' %>/<%= item.id %>">
+                                    <img src="https://image.tmdb.org/t/p/w200<%= item.poster_path || '' %>" alt="<%= item.naziv || 'N/A' %>">
+                                </a>
+                                <p><%= item.naziv || 'Nepoznato' %> (<%= item.tip %>)</p>
+            
+                                <!-- Dugme za brisanje pojedinačne stavke -->
+                                <form action="/popisi/obrisi-stavku" method="POST">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                    <input type="hidden" name="popis_id" value="<%= popis.id %>">
+                                    <input type="hidden" name="sadrzaj_id" value="<%= item.id %>">
+                                    <input type="hidden" name="tip_sadrzaja" value="<%= item.tip %>">
+                                    <button type="submit" class="remove-item">✖</button>
+                                </form>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <p>Popis je prazan.</p>
+                <% } %>
+            </div>
+            
         </div>
     <% }) %>
+
+    <%- include('partials/footer') %>
+
 </body>
 </html>
