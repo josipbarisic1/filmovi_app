@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <title><%= popis.naziv %></title>
+    <link rel="stylesheet" href="/css/popisi.css">
+</head>
+<body>
+
+    <%- include('partials/header') %>
+
+    <h1><%= popis.naziv %></h1>
+    <a href="/popisi">← Back to Lists</a>
+
+    <div class="grid-container">
+        <% if (popis.sadrzaj.length > 0) { %>
+            <% popis.sadrzaj.forEach(item => { %>
+                <div class="list-item">
+                    <a href="/<%= item.tip === 'film' ? 'film' : 'serija' %>/<%= item.id %>">
+                        <% if (item.poster_path) { %>
+                            <img src="https://image.tmdb.org/t/p/w200<%= item.poster_path %>" alt="<%= item.naziv %>">
+                        <% } else { %>
+                            <img src="/img/no-image.png" alt="No Image Available">
+                        <% } %>
+                    </a>
+                    <p><%= item.naziv %> (<%= item.tip %>)</p>
+                    <form action="/popisi/obrisi-stavku" method="POST">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <input type="hidden" name="popis_id" value="<%= popis.id %>">
+                        <input type="hidden" name="sadrzaj_id" value="<%= item.id %>">
+                        <input type="hidden" name="tip_sadrzaja" value="<%= item.tip %>">
+                        <button type="submit" class="remove-item">✖</button>
+                    </form>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <p>This list is empty.</p>
+        <% } %>
+    </div>
+
+
+    <%- include('partials/footer') %>
+
+</body>
+</html>

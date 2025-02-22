@@ -553,7 +553,8 @@ app.get('/profile/edit', (req, res) => {
         res.render('register', {
             korisnik: results[0],
             csrfToken: req.csrfToken(),
-            isEdit: true
+            isEdit: true,
+            errorMessage: null,
         });
     });
 });
@@ -1115,16 +1116,14 @@ app.get('/popisi', async (req, res) => {
     connection.query(sql, [userId], async (err, results) => {
         connection.end();
         if (err) {
-            console.error('❌ Greška prilikom dohvaćanja popisa:', err);
+            console.error('Greška prilikom dohvaćanja popisa:', err);
             return res.status(500).send('Pogreška prilikom dohvaćanja popisa.');
         }
 
-        // Procesuiramo svaki popis i dohvaćamo podatke za svaki film/seriju
         for (let popis of results) {
             try {
                 popis.sadrzaj = popis.sadrzaj ? JSON.parse(popis.sadrzaj) : [];
 
-                // Dohvaćamo detalje filmova/serija sa TMDB-a
                 for (let item of popis.sadrzaj) {
                     const apiUrl = item.tip === "film"
                         ? `https://api.themoviedb.org/3/movie/${item.id}?api_key=${process.env.TMDB_API_KEY}`
@@ -1135,13 +1134,13 @@ app.get('/popisi', async (req, res) => {
                         item.naziv = response.data.title || response.data.name;
                         item.poster_path = response.data.poster_path;
                     } catch (apiError) {
-                        console.error(`⚠️ TMDB API greška (${item.id}):`, apiError);
+                        console.error(`TMDB API greška (${item.id}):`, apiError);
                         item.naziv = "Nepoznato";
                         item.poster_path = null;
                     }
                 }
             } catch (jsonError) {
-                console.error("⚠️ Greška pri parsiranju JSON-a u popisu:", jsonError);
+                console.error("Greška pri parsiranju JSON-a u popisu:", jsonError);
                 popis.sadrzaj = [];
             }
         }
@@ -1242,6 +1241,59 @@ app.post("/popisi/obrisi", requireLogin, (req, res) => {
         }
     );
 });
+
+app.get('/popisi/:id', async (req, res) => {
+    const userId = req.session.userId;
+    const username = req.session.username;
+    const popisId = req.params.id;
+
+    if (!username) return res.status(401).send('You must be logged in.');
+
+    const mysql = require('mysql');
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const sql = 'SELECT * FROM popisi WHERE id = ? AND korisnik_id = ?';
+    connection.query(sql, [popisId, userId], async (err, results) => {
+        connection.end();
+        if (err) {
+            console.error('Error fetching list:', err);
+            return res.status(500).send('Error fetching list.');
+        }
+
+        if (results.length === 0) {
+            return res.status(404).send('List not found.');
+        }
+
+        const popis = results[0];
+        popis.sadrzaj = popis.sadrzaj ? JSON.parse(popis.sadrzaj) : [];
+
+        for (let item of popis.sadrzaj) {
+            const apiUrl = item.tip === "film"
+                ? `https://api.themoviedb.org/3/movie/${item.id}?api_key=${process.env.TMDB_API_KEY}`
+                : `https://api.themoviedb.org/3/tv/${item.id}?api_key=${process.env.TMDB_API_KEY}`;
+
+            try {
+                const response = await axios.get(apiUrl);
+                item.naziv = response.data.title || response.data.name;
+                item.poster_path = response.data.poster_path;
+            } catch (apiError) {
+                console.error(`TMDB API error (${item.id}):`, apiError);
+                item.naziv = "Unknown";
+                item.poster_path = null;
+            }
+        }
+
+        res.render('popis', { popis });
+    });
+});
+
 
 app.post("/popisi/obrisi-stavku", requireLogin, async (req, res) => {
     const { popis_id, sadrzaj_id, tip_sadrzaja } = req.body;
