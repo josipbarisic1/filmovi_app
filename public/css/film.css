@@ -299,6 +299,9 @@ body {
 .action-btn:hover {
     color: #0056b3;
 }
+.action-btn.active {
+    color: red;
+}
 
 .favorite i, .add-to-list i {
     font-size: 1.75rem;

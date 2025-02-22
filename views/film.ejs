@@ -63,11 +63,17 @@
                                 </div>                        
                                 
                                 <div class="film-actions">
-                                    <button id="favorite-btn" class="action-btn favorite" title="Dodaj u favorite">
-                                        <i class="far fa-heart"></i>
+                                    <button id="favorite-btn" class="action-btn favorite <%= isFavorite ? 'active' : '' %>" 
+                                        data-id="<%= film.id %>" data-tip="film" title="Add to Favorites">
+                                        <i class="<%= isFavorite ? 'fas' : 'far' %> fa-heart"></i>
                                     </button>
+                                    
+                                    <button id="watched-btn" class="action-btn watched <%= isWatched ? 'active' : '' %>" 
+                                        data-id="<%= film.id %>" data-tip="film" title="Mark as Watched">
+                                        <i class="<%= isWatched ? 'fas' : 'far' %> fa-check"></i>
+                                    </button>                                    
                                 
-                                    <button id="open-list-dropdown" class="action-btn add-to-list" title="Dodaj na listu">
+                                    <button id="open-list-dropdown" class="action-btn add-to-list" title="Add to list">
                                         <i class="fas fa-plus"></i>
                                     </button>
                                 
@@ -226,18 +232,6 @@
             return `rgb(${red}, ${green}, 0)`; 
         }
 
-        document.getElementById("favorite-btn").addEventListener("click", function () {
-            const icon = this.querySelector("i");
-            if (icon.classList.contains("far")) {
-                icon.classList.remove("far");
-                icon.classList.add("fas");
-                icon.style.color = "red";
-            } else {
-                icon.classList.remove("fas");
-                icon.classList.add("far");
-                icon.style.color = "white";
-            }
-        });
 
         document.addEventListener("DOMContentLoaded", function () {
             const recommendCards = document.querySelectorAll(".recommend-card");
@@ -301,6 +295,8 @@
                     showPopupMessage('Successfully added to the list!', true);
                 } else if (response.status === 409) {
                     showPopupMessage('This content is already in the list!', false);
+                } else if (response.status === 401) {
+                    showPopupMessage('Login to use this', false);
                 } else {
                     showPopupMessage('Failed to add to the list.', false);
                 }
@@ -310,6 +306,63 @@
             }
         }
 
+        async function toggleFavorite() {
+            const btn = document.getElementById('favorite-btn');
+            const contentId = btn.getAttribute('data-id');
+            const tip = btn.getAttribute('data-tip');
+
+            const isActive = btn.classList.contains('active');
+
+            const url = isActive ? '/favoriti/ukloni' : '/favoriti/dodaj';
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'CSRF-Token': csrfToken },
+                body: JSON.stringify({ sadrzaj_id: contentId, tip })
+            });
+
+            if (response.ok) {
+                btn.classList.toggle('active');
+                btn.querySelector("i").classList.toggle("fas");
+                btn.querySelector("i").classList.toggle("far");
+                showPopupMessage(isActive ? 'Removed from Favorites!' : 'Added to Favorites!', true);
+            } else if (response.status === 401) {
+                showPopupMessage('Login to use this', false);
+            } else {
+                showPopupMessage('Error updating Favorites.', false);
+            }
+        }
+
+        document.getElementById('favorite-btn').addEventListener('click', toggleFavorite);
+
+        async function toggleWatched() {
+            const btn = document.getElementById('watched-btn');
+            const contentId = btn.getAttribute('data-id');
+            const tip = btn.getAttribute('data-tip');
+
+            const isActive = btn.classList.contains('active');
+
+            const url = isActive ? '/pogledano/ukloni' : '/pogledano/dodaj';
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'CSRF-Token': csrfToken },
+                body: JSON.stringify({ sadrzaj_id: contentId, tip })
+            });
+
+            if (response.ok) {
+                btn.classList.toggle('active');
+                btn.querySelector("i").classList.toggle("fas");
+                btn.querySelector("i").classList.toggle("far");
+                showPopupMessage(isActive ? 'Removed from Watched!' : 'Marked as Watched!', true);
+            } else if (response.status === 401) {
+                showPopupMessage('Login to use this', false);
+            } else {
+                showPopupMessage('Error updating Watched.', false);
+            }
+        }
+
+        document.getElementById('watched-btn').addEventListener('click', toggleWatched);
 
 
         document.getElementById('open-list-dropdown').addEventListener('click', () => {

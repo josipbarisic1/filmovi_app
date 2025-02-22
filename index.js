@@ -110,7 +110,7 @@ app.get('/ai-models', async (req, res) => {
 
 function requireLogin(req, res, next) {
     if (!req.session.userId) {
-        return res.status(403).json({ error: "You must be logged in to use AI recommendations." });
+        return res.status(401).send('Login to use this');
     }
     next();
 }
@@ -1067,35 +1067,8 @@ app.post('/popisi/dodaj', (req, res) => {
     });
 });
 */
-app.post('/popisi/kreiraj', async (req, res) => {
-    const { naziv, tip_popisa } = req.body;
-    const userId = req.session.userId;
-    const username = req.session.username;
 
-    if (!username) return res.status(401).send('Morate biti prijavljeni.');
-
-    const mysql = require('mysql');
-    const connection = mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-    });
-
-    connection.connect();
-
-    const sql = 'INSERT INTO popisi (naziv, tip_popisa, korisnik_id, sadrzaj) VALUES (?, ?, ?, ?)';
-    connection.query(sql, [naziv, tip_popisa, userId, '[]'], (err) => {
-        connection.end();
-        if (err) {
-            console.error('Greška prilikom stvaranja popisa:', err);
-            return res.status(500).send('Pogreška prilikom stvaranja popisa.');
-        }
-        res.redirect('/popisi');
-    });
-});
-
-app.get('/popisi', async (req, res) => {
+app.get('/popisi', requireLogin, async (req, res) => {
     const userId = req.session.userId;
     const username = req.session.username;
 
@@ -1146,6 +1119,34 @@ app.get('/popisi', async (req, res) => {
         }
 
         res.render('popisi', { popisi: results });
+    });
+});
+
+app.post('/popisi/kreiraj', async (req, res) => {
+    const { naziv, tip_popisa } = req.body;
+    const userId = req.session.userId;
+    const username = req.session.username;
+
+    if (!username) return res.status(401).send('Morate biti prijavljeni.');
+
+    const mysql = require('mysql');
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const sql = 'INSERT INTO popisi (naziv, tip_popisa, korisnik_id, sadrzaj) VALUES (?, ?, ?, ?)';
+    connection.query(sql, [naziv, tip_popisa, userId, '[]'], (err) => {
+        connection.end();
+        if (err) {
+            console.error('Greška prilikom stvaranja popisa:', err);
+            return res.status(500).send('Pogreška prilikom stvaranja popisa.');
+        }
+        res.redirect('/popisi');
     });
 });
 
@@ -1383,46 +1384,177 @@ app.get('/api/popisi', async (req, res) => {
 });
 
 
+app.post('/favoriti/dodaj', requireLogin, (req, res) => {
+    const { sadrzaj_id, tip } = req.body;
+    const userId = req.session.userId;
+
+    if (!sadrzaj_id || !tip) return res.status(400).send("Invalid data.");
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    connection.query(
+        "SELECT * FROM favoriti WHERE korisnik_id = ? AND sadrzaj_id = ? AND tip = ?",
+        [userId, sadrzaj_id, tip],
+        (err, results) => {
+            if (err) {
+                connection.end();
+                return res.status(500).send("Database error.");
+            }
+            if (results.length > 0) {
+                connection.end();
+                return res.status(409).send("Already in Favorites.");
+            }
+
+            connection.query(
+                "INSERT INTO favoriti (korisnik_id, sadrzaj_id, tip) VALUES (?, ?, ?)",
+                [userId, sadrzaj_id, tip],
+                (insertErr) => {
+                    connection.end();
+                    if (insertErr) return res.status(500).send("Database error.");
+                    res.sendStatus(200);
+                }
+            );
+        }
+    );
+});
+
+app.post('/favoriti/ukloni', requireLogin, (req, res) => {
+    const { sadrzaj_id, tip } = req.body;
+    const userId = req.session.userId;
+
+    if (!sadrzaj_id || !tip) return res.status(400).send("Invalid data.");
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    connection.query(
+        "DELETE FROM favoriti WHERE korisnik_id = ? AND sadrzaj_id = ? AND tip = ?",
+        [userId, sadrzaj_id, tip],
+        (err) => {
+            connection.end();
+            if (err) return res.status(500).send("Database error.");
+            res.sendStatus(200);
+        }
+    );
+});
+
+app.post('/pogledano/dodaj', requireLogin, (req, res) => {
+    const { sadrzaj_id, tip } = req.body;
+    const userId = req.session.userId;
+
+    if (!sadrzaj_id || !tip) return res.status(400).send("Invalid data.");
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    connection.query(
+        "SELECT * FROM pogledano WHERE korisnik_id = ? AND sadrzaj_id = ? AND tip = ?",
+        [userId, sadrzaj_id, tip],
+        (err, results) => {
+            if (err) {
+                connection.end();
+                return res.status(500).send("Database error.");
+            }
+            if (results.length > 0) {
+                connection.end();
+                return res.status(409).send("Already marked as Watched.");
+            }
+
+            connection.query(
+                "INSERT INTO pogledano (korisnik_id, sadrzaj_id, tip) VALUES (?, ?, ?)",
+                [userId, sadrzaj_id, tip],
+                (insertErr) => {
+                    connection.end();
+                    if (insertErr) return res.status(500).send("Database error.");
+                    res.sendStatus(200);
+                }
+            );
+        }
+    );
+});
+
+app.post('/pogledano/ukloni', requireLogin, (req, res) => {
+    const { sadrzaj_id, tip } = req.body;
+    const userId = req.session.userId;
+
+    if (!sadrzaj_id || !tip) return res.status(400).send("Invalid data.");
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    connection.query(
+        "DELETE FROM pogledano WHERE korisnik_id = ? AND sadrzaj_id = ? AND tip = ?",
+        [userId, sadrzaj_id, tip],
+        (err) => {
+            connection.end();
+            if (err) return res.status(500).send("Database error.");
+            res.sendStatus(200);
+        }
+    );
+});
 
 
 app.get('/film/:id', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const filmId = req.params.id;
+    const userId = req.session.userId;
 
     const filmUrl = `https://api.themoviedb.org/3/movie/${filmId}?api_key=${apiKey}&append_to_response=credits,videos,releases`;
     const recommendationsUrl = `https://api.themoviedb.org/3/movie/${filmId}/recommendations?api_key=${apiKey}`;
     const watchProvidersUrl = `https://api.themoviedb.org/3/movie/${filmId}/watch/providers?api_key=${apiKey}`;
-    const watchProvidersResponse = await axios.get(watchProvidersUrl);
-    const watchProviders = watchProvidersResponse.data.results || {};
-    
-    let userCountry = req.headers["accept-language"]?.match(/-[A-Z]{2}/)?.[0]?.replace("-", "") || "US";
-    if (!watchProviders[userCountry]) {
-        userCountry = watchProviders["US"] ? "US" : Object.keys(watchProviders)[0] || "US";
-    }
-
-    const filteredProviders = {
-        country: userCountry,
-        providers: watchProviders[userCountry]?.flatrate || [],
-        link: watchProviders[userCountry]?.link || null
-    };
-
-    
-    const mysql = require('mysql');
 
     try {
-        const [filmResponse, recommendationsResponse] = await Promise.all([
+        const [filmResponse, recommendationsResponse, watchProvidersResponse] = await Promise.all([
             axios.get(filmUrl),
             axios.get(recommendationsUrl),
+            axios.get(watchProvidersUrl)
         ]);
 
         const film = filmResponse.data;
         const preporuke = recommendationsResponse.data.results.slice(0, 7);
+        const watchProviders = watchProvidersResponse.data.results || {};
+
+        let userCountry = req.headers["accept-language"]?.match(/-[A-Z]{2}/)?.[0]?.replace("-", "") || "US";
+        if (!watchProviders[userCountry]) {
+            userCountry = watchProviders["US"] ? "US" : Object.keys(watchProviders)[0] || "US";
+        }
+
+        const filteredProviders = {
+            country: userCountry,
+            providers: watchProviders[userCountry]?.flatrate || [],
+            link: watchProviders[userCountry]?.link || null
+        };
 
         const director = film.credits.crew.find(person => person.job === 'Director');
-
         const releaseInfo = film.releases.countries.find(country => country.iso_3166_1 === 'US');
         const pgRating = releaseInfo?.certification || 'N/A';
 
+        const mysql = require('mysql');
         const connection = mysql.createConnection({
             host: process.env.DB_HOST,
             user: process.env.DB_USER,
@@ -1432,29 +1564,42 @@ app.get('/film/:id', async (req, res) => {
 
         connection.connect();
 
-        connection.query(
-            `SELECT k.tekst, k.ocjena, k.datum, k.korisnik_id, korisnici.nadimak 
-            FROM komentari k 
-            LEFT JOIN korisnici ON k.korisnik_id = korisnici.id
-            WHERE k.film_id = ? 
-            ORDER BY k.datum DESC
-            LIMIT 3`,
-            [filmId],
-            (error, results) => {
-                if (error) {
-                    console.error('Greška prilikom dohvaćanja komentara:', error);
-                    res.status(500).send('Greška prilikom dohvaćanja komentara.');
-                } else {
-                    connection.query(
-                        `SELECT COUNT(*) AS total FROM komentari WHERE film_id = ?`,
-                        [filmId],
-                        (countError, countResults) => {
-                            if (countError) {
-                                console.error('Greška prilikom prebrojavanja komentara:', countError);
-                                res.status(500).send('Greška prilikom prebrojavanja komentara.');
-                            } else {
-                                const totalComments = countResults[0].total;
+        let isFavorite = false;
+        let isWatched = false;
 
+        const favoriteQuery = "SELECT * FROM favoriti WHERE korisnik_id = ? AND sadrzaj_id = ? AND tip = 'film'";
+        const watchedQuery = "SELECT * FROM pogledano WHERE korisnik_id = ? AND sadrzaj_id = ? AND tip = 'film'";
+
+        connection.query(favoriteQuery, [userId, filmId], (err, favoriteResults) => {
+            if (favoriteResults.length > 0) isFavorite = true;
+
+            connection.query(watchedQuery, [userId, filmId], (err, watchedResults) => {
+                if (watchedResults.length > 0) isWatched = true;
+
+                connection.query(
+                    `SELECT k.tekst, k.ocjena, k.datum, k.korisnik_id, korisnici.nadimak 
+                    FROM komentari k 
+                    LEFT JOIN korisnici ON k.korisnik_id = korisnici.id
+                    WHERE k.film_id = ? 
+                    ORDER BY k.datum DESC
+                    LIMIT 3`,
+                    [filmId],
+                    (error, results) => {
+                        if (error) {
+                            console.error('Greška prilikom dohvaćanja komentara:', error);
+                            return res.status(500).send('Greška prilikom dohvaćanja komentara.');
+                        }
+
+                        connection.query(
+                            `SELECT COUNT(*) AS total FROM komentari WHERE film_id = ?`,
+                            [filmId],
+                            (countError, countResults) => {
+                                if (countError) {
+                                    console.error('Greška prilikom prebrojavanja komentara:', countError);
+                                    return res.status(500).send('Greška prilikom prebrojavanja komentara.');
+                                }
+
+                                const totalComments = countResults[0].total;
                                 const userScores = results.map(row => row.ocjena);
                                 const userScore = userScores.length > 0 
                                     ? (userScores.reduce((a, b) => a + b, 0) / userScores.length).toFixed(1) 
@@ -1463,6 +1608,7 @@ app.get('/film/:id', async (req, res) => {
                                 const userScoreColor = getScoreColor(userScore);
                                 const tmdbScoreColor = getScoreColor(film.vote_average);
 
+                                connection.end();
                                 res.render('film', {
                                     film,
                                     direktor: director ? director.name : 'N/A',
@@ -1476,19 +1622,23 @@ app.get('/film/:id', async (req, res) => {
                                     tmdbScoreColor,
                                     filmId,
                                     watchProviders: filteredProviders,
+                                    isFavorite,
+                                    isWatched,
+                                    csrfToken: req.csrfToken()
                                 });
                             }
-                        }
-                    );
-                }
-            }
-        );
+                        );
+                    }
+                );
+            });
+        });
 
     } catch (error) {
         console.error('Došlo je do pogreške prilikom dohvaćanja podataka o filmu:', error);
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka o filmu.');
     }
 });
+
 
 app.get('/film/:id/glumci', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
@@ -1561,20 +1711,33 @@ app.get('/film/:id/detalji', async (req, res) => {
 app.get('/serija/:id', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const serijaId = req.params.id;
+    const userId = req.session.userId;
 
     const serijaUrl = `https://api.themoviedb.org/3/tv/${serijaId}?api_key=${apiKey}&append_to_response=videos,credits,recommendations`;
+    const watchProvidersUrl = `https://api.themoviedb.org/3/tv/${serijaId}/watch/providers?api_key=${apiKey}`;
 
     try {
-        const response = await axios.get(serijaUrl);
-        const serija = response.data;
+        const [serijaResponse, watchProvidersResponse] = await Promise.all([
+            axios.get(serijaUrl),
+            axios.get(watchProvidersUrl)
+        ]);
 
+        const serija = serijaResponse.data;
         const preporuke = serija.recommendations?.results?.slice(0, 7) || [];
+        const watchProviders = watchProvidersResponse.data.results || {};
+
+        let userCountry = req.headers["accept-language"]?.match(/-[A-Z]{2}/)?.[0]?.replace("-", "") || "US";
+        if (!watchProviders[userCountry]) {
+            userCountry = watchProviders["US"] ? "US" : Object.keys(watchProviders)[0] || "US";
+        }
+
+        const filteredProviders = {
+            country: userCountry,
+            providers: watchProviders[userCountry]?.flatrate || [],
+            link: watchProviders[userCountry]?.link || null
+        };
 
         const creator = serija.created_by.length > 0 ? serija.created_by[0].name : 'N/A';
-        const trailer = serija.videos?.results?.find(video => video.type === "Trailer");
-        if (!trailer) {
-            console.log("Trailer nije pronađen za ovu seriju.");
-        }
 
         const mysql = require('mysql');
         const connection = mysql.createConnection({
@@ -1586,29 +1749,45 @@ app.get('/serija/:id', async (req, res) => {
 
         connection.connect();
 
-        connection.query(
-            `SELECT k.tekst, k.ocjena, k.datum, k.korisnik_id, korisnici.nadimak 
-            FROM komentari k 
-            LEFT JOIN korisnici ON k.korisnik_id = korisnici.id
-            WHERE k.serija_id = ? 
-            ORDER BY k.datum DESC 
-            LIMIT 3`,
-            [serijaId],
-            (error, results) => {
-                if (error) {
-                    console.error('Greška prilikom dohvaćanja komentara za seriju:', error);
-                    res.status(500).send('Greška prilikom dohvaćanja komentara za seriju.');
-                } else {
-                    connection.query(
-                        `SELECT COUNT(*) AS total FROM komentari WHERE serija_id = ?`,
-                        [serijaId],
-                        (countError, countResults) => {
-                            if (countError) {
-                                console.error('Greška prilikom prebrojavanja komentara:', countError);
-                                res.status(500).send('Greška prilikom prebrojavanja komentara.');
-                            } else {
-                                const totalComments = countResults[0].total;
+        let isFavorite = false;
+        let isWatched = false;
 
+        const favoriteQuery = "SELECT * FROM favoriti WHERE korisnik_id = ? AND sadrzaj_id = ? AND tip = 'serija'";
+        const watchedQuery = "SELECT * FROM pogledano WHERE korisnik_id = ? AND sadrzaj_id = ? AND tip = 'serija'";
+
+        connection.query(favoriteQuery, [userId, serijaId], (err, favoriteResults) => {
+            if (favoriteResults.length > 0) isFavorite = true;
+
+            connection.query(watchedQuery, [userId, serijaId], (err, watchedResults) => {
+                if (watchedResults.length > 0) isWatched = true;
+
+                connection.query(
+                    `SELECT k.tekst, k.ocjena, k.datum, k.korisnik_id, korisnici.nadimak 
+                    FROM komentari k 
+                    LEFT JOIN korisnici ON k.korisnik_id = korisnici.id
+                    WHERE k.serija_id = ? 
+                    ORDER BY k.datum DESC 
+                    LIMIT 3`,
+                    [serijaId],
+                    (error, results) => {
+                        if (error) {
+                            console.error('Greška prilikom dohvaćanja komentara za seriju:', error);
+                            connection.end();
+                            return res.status(500).send('Greška prilikom dohvaćanja komentara za seriju.');
+                        }
+
+                        connection.query(
+                            `SELECT COUNT(*) AS total FROM komentari WHERE serija_id = ?`,
+                            [serijaId],
+                            (countError, countResults) => {
+                                connection.end();
+
+                                if (countError) {
+                                    console.error('Greška prilikom prebrojavanja komentara:', countError);
+                                    return res.status(500).send('Greška prilikom prebrojavanja komentara.');
+                                }
+
+                                const totalComments = countResults[0].total;
                                 const userScores = results.map(row => row.ocjena);
                                 const userScore = userScores.length > 0 
                                     ? (userScores.reduce((a, b) => a + b, 0) / userScores.length).toFixed(1) 
@@ -1629,13 +1808,17 @@ app.get('/serija/:id', async (req, res) => {
                                     userScoreColor,
                                     tmdbScoreColor,
                                     serijaId,
+                                    watchProviders: filteredProviders,
+                                    isFavorite,
+                                    isWatched,
+                                    csrfToken: req.csrfToken()
                                 });
                             }
-                        }
-                    );
-                }
-            }
-        );        
+                        );
+                    }
+                );
+            });
+        });
 
     } catch (error) {
         console.error('Došlo je do pogreške prilikom dohvaćanja podataka o seriji:', error);
