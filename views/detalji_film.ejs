@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= film.title %> - More Details</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/detalji.css">
+
 </head>
 <body>
     <%- include('partials/header') %>
@@ -19,43 +21,49 @@
     </div>
 
     <main class="details-container">
-        <p><strong>Original Title:</strong> <%= film.original_title || "No Info Available" %></p>
-        <p><strong>Budget:</strong> <%= film.budget > 0 ? `$${film.budget.toLocaleString()}` : "No Info Available" %></p>
-        <p><strong>Revenue:</strong> <%= film.revenue > 0 ? `$${film.revenue.toLocaleString()}` : "No Info Available" %></p>
-        <p><strong>Production Companies:</strong> <%= film.production_companies.length ? film.production_companies.map(c => c.name).join(', ') : "No Info Available" %></p>
-        <p><strong>Production Countries:</strong> <%= film.production_countries.length ? film.production_countries.map(c => c.name).join(', ') : "No Info Available" %></p>
-        <p><strong>Languages:</strong> <%= film.spoken_languages.length ? film.spoken_languages.map(l => l.english_name).join(', ') : "No Info Available" %></p>
-        <p><strong>Popularity:</strong> <%= film.popularity ? film.popularity.toFixed(2) : "No Info Available" %></p>
-        <p><strong>Vote Count:</strong> <%= film.vote_count || "No Info Available" %></p>
-        <p><strong>TMDB Score:</strong> <%= film.vote_average.toFixed(1) || "No Info Available" %></p>
-        <p><strong>Status:</strong> <%= film.status || "No Info Available" %></p>
-        <p><strong>Runtime:</strong> <%= film.runtime ? `${film.runtime} min` : "No Info Available" %></p>
-        <% if (film.homepage) { %>
-            <p><a href="<%= film.homepage %>" target="_blank">Official Website</a></p>
-        <% } %>
-
-        <div class="where-to-watch">
-            <h2>Where to Watch?</h2>
-            <% if (watchProviders && Object.keys(watchProviders).length > 0) { %>
-                <% Object.keys(watchProviders).forEach(country => { %>
-                    <% if (watchProviders[country].length > 0) { %>
-                        <h3>Available in <%= country %>:</h3>
-                        <ul>
-                            <% watchProviders[country].forEach(provider => { %>
-                                <li>
-                                    <img src="https://image.tmdb.org/t/p/original<%= provider.logo_path %>" alt="<%= provider.provider_name %>">
-                                    <%= provider.provider_name %>
-                                </li>
-                            <% }) %>
-                        </ul>
-                    <% } %>
-                <% }) %>
-            <% } else { %>
-                <p>Currently unavailable for streaming.</p>
+        <div class="left">
+            <img src="https://image.tmdb.org/t/p/w500<%= film.poster_path %>" alt="<%= film.title %>">
+        </div>
+        <div class="right">
+            <p><strong>Original Title:</strong> <%= film.original_title || "No Info Available" %></p>
+            <p><strong>Budget:</strong> <%= film.budget > 0 ? `$${film.budget.toLocaleString()}` : "No Info Available" %></p>
+            <p><strong>Revenue:</strong> <%= film.revenue > 0 ? `$${film.revenue.toLocaleString()}` : "No Info Available" %></p>
+            <p><strong>Production Companies:</strong> <%= film.production_companies.length ? film.production_companies.map(c => c.name).join(', ') : "No Info Available" %></p>
+            <p><strong>Production Countries:</strong> <%= film.production_countries.length ? film.production_countries.map(c => c.name).join(', ') : "No Info Available" %></p>
+            <p><strong>Languages:</strong> <%= film.spoken_languages.length ? film.spoken_languages.map(l => l.english_name).join(', ') : "No Info Available" %></p>
+            <p><strong>Popularity:</strong> <%= film.popularity ? film.popularity.toFixed(2) : "No Info Available" %></p>
+            <p><strong>Vote Count:</strong> <%= film.vote_count || "No Info Available" %></p>
+            <p><strong>TMDB Score:</strong> <%= film.vote_average.toFixed(1) || "No Info Available" %></p>
+            <p><strong>Status:</strong> <%= film.status || "No Info Available" %></p>
+            <p><strong>Runtime:</strong> <%= film.runtime ? `${film.runtime} min` : "No Info Available" %></p>
+            <% if (film.homepage) { %>
+                <p><a href="<%= film.homepage %>" target="_blank">Official Website</a></p>
             <% } %>
         </div>
         
     </main>
+
+    <h2 class="wtwh2">Where to Watch?</h2>
+    <div class="where-to-watch details-container">
+        <% if (watchProviders && Object.keys(watchProviders).length > 0) { %>
+            <% Object.keys(watchProviders).forEach(country => { %>
+                <% if (watchProviders[country].length > 0) { %>
+                    <div class="wtw-wrapper">
+                        <h3><%= country %>:</h3>
+                        <ul>
+                            <% watchProviders[country].forEach(provider => { %>
+                                <li>
+                                    <img src="https://image.tmdb.org/t/p/original<%= provider.logo_path %>" alt="<%= provider.provider_name %>" title="<%= provider.provider_name %>">
+                                </li>
+                            <% }) %>
+                        </ul>
+                    </div>  
+                <% } %>
+            <% }) %>
+        <% } else { %>
+            <p>Currently unavailable for streaming.</p>
+        <% } %>
+    </div>
 
     <%- include('partials/footer') %>
 </body>

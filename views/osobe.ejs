@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Popular People</title>
+    <link rel="stylesheet" href="/css/osobe.css">
+</head>
+<body>
+
+    <%- include('partials/header') %>
+
+    <h1>Popular People</h1>
+        <div class="people-container">
+            <% people.forEach(person => { %>
+                <a href="/osoba/<%= person.id %>" class="person-card">
+                    <img src="https://image.tmdb.org/t/p/w500/<%= person.profile_path %>" alt="<%= person.name %>">
+                    <h2><%= person.name %></h2>
+                </a>
+            <% }); %>
+        </div>        
+    </div>
+
+
+    <%- include('partials/footer') %>
+
+</body>
+</html>

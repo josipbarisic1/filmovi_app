@@ -25,29 +25,84 @@
         </p>
     </div>
 
-    <section class="popular-movies">
+    <section class="popular-movies wrap">
         <h2>Popular Movies</h2>
-        <div class="movie-grid">
-            <% popularMovies.forEach(movie => { %>
-                <a href="/film/<%= movie.id %>" class="movie-card-link">
-                    <div class="movie-card">
-                        <div class="poster-wrapper">
-                            <img src="https://image.tmdb.org/t/p/w500/<%= movie.poster_path %>" alt="<%= movie.title %>">
+        <div class="scroll-wrapper">
+            <div class="movie-grid">
+                <% popularMovies.forEach(movie => { %>
+                    <a href="/film/<%= movie.id %>" class="movie-card-link">
+                        <div class="movie-card">
+                            <div class="poster-wrapper">
+                                <img src="https://image.tmdb.org/t/p/w500/<%= movie.poster_path %>" alt="<%= movie.title %>">
+                            </div>
+                            <div class="movie-details">
+                                <h2 class="movie-title-full">
+                                    <%= movie.title.toUpperCase() %>
+                                    <% if (movie.release_date) { %> 
+                                        (<%= movie.release_date.substr(0, 4) %>)
+                                    <% } %>
+                                </h2>
+                                <p><%= movie.overview %></p>
+                            </div>             
                         </div>
-                        <div class="movie-details">
-                            <h2 class="movie-title-full">
-                                <%= movie.title.toUpperCase() %>
-                                <% if (movie.release_date) { %> 
-                                    (<%= movie.release_date.substr(0, 4) %>)
-                                <% } %>
-                            </h2>
-                            <p><%= movie.overview %></p>
-                        </div>             
-                    </div>
-                </a>
-            <% }); %>
+                    </a>
+                <% }); %>
+            </div>
         </div>
     </section>
+
+    <section class="popular-tv-shows wrap">
+        <h2>Popular TV Shows</h2>
+        <div class="scroll-wrapper">
+            <div class="movie-grid">
+                <% popularTVShows.forEach(show => { %>
+                    <a href="/serija/<%= show.id %>" class="movie-card-link">
+                        <div class="movie-card">
+                            <div class="poster-wrapper">
+                                <img src="https://image.tmdb.org/t/p/w500/<%= show.poster_path %>" alt="<%= show.name %>">
+                            </div>
+                            <div class="movie-details">
+                                <h2 class="movie-title-full">
+                                    <%= show.name.toUpperCase() %>
+                                    <% if (show.first_air_date) { %> 
+                                        (<%= show.first_air_date.substr(0, 4) %>)
+                                    <% } %>
+                                </h2>
+                                <p><%= show.overview %></p>
+                            </div>             
+                        </div>
+                    </a>
+                <% }); %>
+            </div>
+        </div>
+    </section>
+    
+    <section class="trending-now wrap">
+        <h2>Trending Now</h2>
+        <div class="scroll-wrapper">
+            <div class="movie-grid">
+                <% trending.forEach(item => { %>
+                    <a href="/<%= item.media_type === 'movie' ? 'film' : 'serija' %>/<%= item.id %>" class="movie-card-link">
+                        <div class="movie-card">
+                            <div class="poster-wrapper">
+                                <img src="https://image.tmdb.org/t/p/w500/<%= item.poster_path %>" alt="<%= item.title || item.name %>">
+                            </div>
+                            <div class="movie-details">
+                                <h2 class="movie-title-full">
+                                    <%= (item.title || item.name).toUpperCase() %>
+                                    <% if (item.release_date || item.first_air_date) { %> 
+                                        (<%= (item.release_date || item.first_air_date).substr(0, 4) %>)
+                                    <% } %>
+                                </h2>
+                                <p><%= item.overview %></p>
+                            </div>             
+                        </div>
+                    </a>
+                <% }); %>
+            </div>
+        </div>
+    </section>
+    
     
     
     <%- include('partials/footer') %>

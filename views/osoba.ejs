@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="hr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= osoba.name %> - Detalji</title>
+    <title><%= osoba.name %> - Details</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/osoba.css">
 </head>
@@ -11,43 +11,43 @@
     <%- include('partials/header') %>
 
     <main>
-        <div class="person-header">
-            <img src="<%= osoba.profile_path ? `https://image.tmdb.org/t/p/w300${osoba.profile_path}` : '/images/placeholder.jpg' %>" alt="<%= osoba.name %>">
+        <section class="person-header">
+            <div class="person-image">
+                <img src="<%= osoba.profile_path ? `https://image.tmdb.org/t/p/w300${osoba.profile_path}` : '/images/placeholder.jpg' %>" alt="<%= osoba.name %>">
+            </div>
             <div class="person-info">
                 <h1><%= osoba.name %></h1>
                 <p><strong>Born:</strong> <%= osoba.birthday || 'N/A' %></p>
                 <p><strong>Place of Birth:</strong> <%= osoba.place_of_birth || 'N/A' %></p>
                 <p><strong>Biography:</strong></p>
-                <p><%= osoba.biography || 'Biography not available.' %></p>
+                <p class="biography-text"><%= osoba.biography || 'Biography not available.' %></p>
             </div>
-        </div>
+        </section>
 
-        <div class="known-for-wrapper">
+        <section class="known-for-wrapper">
             <h2>Known For</h2>
-            <% if (osoba.known_for?.length > 0) { %>
+            <div class="scroll-container">
                 <div class="known-for-grid">
                     <% osoba.known_for.forEach(project => { %>
                         <div class="known-for-card">
                             <a href="<%= project.media_type === 'movie' ? `/film/${project.id}` : `/serija/${project.id}` %>">
-                                <img src="<%= project.poster_path ? `https://image.tmdb.org/t/p/w200${project.poster_path}` : '/images/placeholder.jpg' %>" alt="<%= project.title || project.name %>">
-                                <p><%= project.title || project.name %></p>
+                                <img src="<%= project.poster_path ? `https://image.tmdb.org/t/p/w200${project.poster_path}` : '/images/placeholder.jpg' %>" alt="<%= project.title || project.name %>" title="<%= project.title || project.name %>">
+                                <p title="<%= project.title || project.name %>"><%= project.title || project.name %></p>
                             </a>
                         </div>
                     <% }) %>
                 </div>
-            <% } else { %>
-                <p>No information available.</p>
-            <% } %>
-        </div>
+            </div>
+        </section>
         
 
-        <div class="filmography-wrapper">
+        <section class="filmography-wrapper">
             <h2>Filmography</h2>
             <% if (osoba.combined_credits?.cast?.length > 0) { %>
                 <ul>
                     <% osoba.combined_credits.cast.forEach(credit => { %>
                         <li>
-                            <a href="<%= credit.media_type === 'movie' ? `/film/${credit.id}` : `/serija/${credit.id}` %>">
+                            ➤ <a href="<%= credit.media_type === 'movie' ? `/film/${credit.id}` : `/serija/${credit.id}` %>">
                                 <%= credit.title || credit.name %> (<%= credit.release_date || credit.first_air_date || 'N/A' %>)
                             </a>
                             as <%= credit.character || 'N/A' %>
@@ -57,7 +57,7 @@
             <% } else { %>
                 <p>Filmography not available.</p>
             <% } %>
-        </div>
+        </section>
     </main>
     
     <%- include('partials/footer') %>

@@ -119,6 +119,10 @@ app.get('/ai', requireLogin, (req, res) => {
     res.render('ai', { csrfToken: req.csrfToken() });
 });
 
+app.get('/ai-info', (req, res) => {
+    res.render('ai_info');
+});
+
 const aiRequests = {};
 
 app.post('/ai-recommend', requireLogin, async (req, res) => {    const { userMessage } = req.body;
@@ -279,21 +283,22 @@ app.get('/', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
 
     try {
-        const [popularResponse, trendingResponse] = await Promise.all([
+        const [popularMovies, trending, popularTVShows] = await Promise.all([
             axios.get(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}`),
-            axios.get(`https://api.themoviedb.org/3/trending/movie/week?api_key=${apiKey}`)
+            axios.get(`https://api.themoviedb.org/3/trending/all/week?api_key=${apiKey}`),
+            axios.get(`https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}`)
         ]);
 
         res.render('pocetna', {
-            popularMovies: popularResponse.data.results.slice(0, 6),
-            trendingMovies: trendingResponse.data.results.slice(0, 6)
+            popularMovies: popularMovies.data.results.slice(0, 6),
+            trending: trending.data.results.slice(0, 6),
+            popularTVShows: popularTVShows.data.results.slice(0, 6)
         });
     } catch (error) {
-        console.error("Error fetching movies:", error);
-        res.render('pocetna', { popularMovies: [], trendingMovies: [] });
+        console.error("Error fetching movies and TV shows:", error);
+        res.render('pocetna', { popularMovies: [], trending: [], popularTVShows: [] });
     }
 });
-
 
 
 app.get('/test', (req, res) => {
@@ -950,6 +955,17 @@ app.get('/:category/alphabetical', async (req, res) => {
     await updateRenderParams(url, `Alphabetical ${category === 'movie' ? 'Movies' : 'TV Shows'}`, category, req, res);
 });
 
+app.get('/people', async (req, res) => {
+    try {
+        const response = await axios.get(`https://api.themoviedb.org/3/person/popular?api_key=${process.env.TMDB_API_KEY}`);
+        res.render('osobe', { people: response.data.results });
+    } catch (error) {
+        console.error("Error fetching popular people:", error);
+        res.render('osobe', { people: [] });
+    }
+});
+
+
 
 /* 
 app.get('/:category/latest', async (req, res) => {
@@ -1072,7 +1088,7 @@ app.get('/popisi', requireLogin, async (req, res) => {
     const userId = req.session.userId;
     const username = req.session.username;
 
-    if (!username) return res.status(401).send('Morate biti prijavljeni.');
+    if (!username) return res.status(401).send('You must be logged in.');
 
     const mysql = require('mysql');
     const connection = mysql.createConnection({
@@ -1084,43 +1100,69 @@ app.get('/popisi', requireLogin, async (req, res) => {
 
     connection.connect();
 
-    const sql = 'SELECT id, naziv, tip_popisa, sadrzaj, JSON_LENGTH(sadrzaj) AS broj_stavki, created_at FROM popisi WHERE korisnik_id = ?';
+    try {
+        const [popisi, favoriti, pogledano] = await Promise.all([
+            queryDatabase(connection, 'SELECT id, naziv, tip_popisa, sadrzaj, JSON_LENGTH(sadrzaj) AS broj_stavki, created_at FROM popisi WHERE korisnik_id = ?', [userId]),
+            queryDatabase(connection, 'SELECT sadrzaj_id, tip FROM favoriti WHERE korisnik_id = ?', [userId]),
+            queryDatabase(connection, 'SELECT sadrzaj_id, tip FROM pogledano WHERE korisnik_id = ?', [userId])
+        ]);
 
-    connection.query(sql, [userId], async (err, results) => {
-        connection.end();
-        if (err) {
-            console.error('Greška prilikom dohvaćanja popisa:', err);
-            return res.status(500).send('Pogreška prilikom dohvaćanja popisa.');
+        for (let popis of popisi) {
+            popis.sadrzaj = popis.sadrzaj ? JSON.parse(popis.sadrzaj) : [];
         }
 
-        for (let popis of results) {
-            try {
-                popis.sadrzaj = popis.sadrzaj ? JSON.parse(popis.sadrzaj) : [];
-
-                for (let item of popis.sadrzaj) {
+        const fetchContentDetails = async (items) => {
+            return await Promise.all(items.map(async (item) => {
+                try {
                     const apiUrl = item.tip === "film"
-                        ? `https://api.themoviedb.org/3/movie/${item.id}?api_key=${process.env.TMDB_API_KEY}`
-                        : `https://api.themoviedb.org/3/tv/${item.id}?api_key=${process.env.TMDB_API_KEY}`;
+                        ? `https://api.themoviedb.org/3/movie/${item.sadrzaj_id}?api_key=${process.env.TMDB_API_KEY}`
+                        : `https://api.themoviedb.org/3/tv/${item.sadrzaj_id}?api_key=${process.env.TMDB_API_KEY}`;
 
-                    try {
-                        const response = await axios.get(apiUrl);
-                        item.naziv = response.data.title || response.data.name;
-                        item.poster_path = response.data.poster_path;
-                    } catch (apiError) {
-                        console.error(`TMDB API greška (${item.id}):`, apiError);
-                        item.naziv = "Nepoznato";
-                        item.poster_path = null;
-                    }
+                    const response = await axios.get(apiUrl);
+                    return {
+                        id: item.sadrzaj_id,
+                        tip: item.tip,
+                        naziv: response.data.title || response.data.name,
+                        poster_path: response.data.poster_path
+                    };
+                } catch (error) {
+                    console.error(`TMDB API error for ID ${item.sadrzaj_id}:`, error);
+                    return { id: item.sadrzaj_id, tip: item.tip, naziv: "Unknown", poster_path: null };
                 }
-            } catch (jsonError) {
-                console.error("Greška pri parsiranju JSON-a u popisu:", jsonError);
-                popis.sadrzaj = [];
-            }
-        }
+            }));
+        };
 
-        res.render('popisi', { popisi: results });
-    });
+        const [favoritesContent, watchedContent] = await Promise.all([
+            fetchContentDetails(favoriti),
+            fetchContentDetails(pogledano)
+        ]);
+
+        connection.end();
+        res.render('popisi', {
+            popisi,
+            favorites: favoritesContent,
+            watched: watchedContent,
+            favoritesCount: favoritesContent.length,
+            watchedCount: watchedContent.length
+        });
+
+    } catch (error) {
+        console.error('Error processing lists:', error);
+        connection.end();
+        res.status(500).send('Error retrieving lists.');
+    }
 });
+
+function queryDatabase(connection, query, params) {
+    return new Promise((resolve, reject) => {
+        connection.query(query, params, (err, results) => {
+            if (err) return reject(err);
+            resolve(results);
+        });
+    });
+}
+
+
 
 app.post('/popisi/kreiraj', async (req, res) => {
     const { naziv, tip_popisa } = req.body;
@@ -1243,57 +1285,100 @@ app.post("/popisi/obrisi", requireLogin, (req, res) => {
     );
 });
 
-app.get('/popisi/:id', async (req, res) => {
+app.get('/popisi/:id', requireLogin, async (req, res) => {
     const userId = req.session.userId;
-    const username = req.session.username;
     const popisId = req.params.id;
 
-    if (!username) return res.status(401).send('You must be logged in.');
+    if (popisId === "favorites" || popisId === "watched") {
+        const tip = popisId === "favorites" ? "favoriti" : "pogledano";
+        const naslov = popisId === "favorites" ? "Favorites" : "Watched";
 
-    const mysql = require('mysql');
-    const connection = mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-    });
+        const mysql = require('mysql');
+        const connection = mysql.createConnection({
+            host: process.env.DB_HOST,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
+        });
 
-    connection.connect();
+        connection.connect();
 
-    const sql = 'SELECT * FROM popisi WHERE id = ? AND korisnik_id = ?';
-    connection.query(sql, [popisId, userId], async (err, results) => {
-        connection.end();
-        if (err) {
-            console.error('Error fetching list:', err);
-            return res.status(500).send('Error fetching list.');
-        }
-
-        if (results.length === 0) {
-            return res.status(404).send('List not found.');
-        }
-
-        const popis = results[0];
-        popis.sadrzaj = popis.sadrzaj ? JSON.parse(popis.sadrzaj) : [];
-
-        for (let item of popis.sadrzaj) {
-            const apiUrl = item.tip === "film"
-                ? `https://api.themoviedb.org/3/movie/${item.id}?api_key=${process.env.TMDB_API_KEY}`
-                : `https://api.themoviedb.org/3/tv/${item.id}?api_key=${process.env.TMDB_API_KEY}`;
-
-            try {
-                const response = await axios.get(apiUrl);
-                item.naziv = response.data.title || response.data.name;
-                item.poster_path = response.data.poster_path;
-            } catch (apiError) {
-                console.error(`TMDB API error (${item.id}):`, apiError);
-                item.naziv = "Unknown";
-                item.poster_path = null;
+        const sql = `SELECT sadrzaj_id, tip FROM ${tip} WHERE korisnik_id = ?`;
+        connection.query(sql, [userId], async (err, results) => {
+            connection.end();
+            if (err) {
+                console.error(`Error fetching ${tip}:`, err);
+                return res.status(500).send(`Error retrieving ${naslov}.`);
             }
-        }
 
-        res.render('popis', { popis });
-    });
+            const sadrzaj = [];
+            for (let item of results) {
+                try {
+                    const apiUrl = item.tip === "film"
+                        ? `https://api.themoviedb.org/3/movie/${item.sadrzaj_id}?api_key=${process.env.TMDB_API_KEY}`
+                        : `https://api.themoviedb.org/3/tv/${item.sadrzaj_id}?api_key=${process.env.TMDB_API_KEY}`;
+
+                    const response = await axios.get(apiUrl);
+                    sadrzaj.push({
+                        id: item.sadrzaj_id,
+                        tip: item.tip,
+                        naziv: response.data.title || response.data.name,
+                        poster_path: response.data.poster_path
+                    });
+                } catch (apiError) {
+                    console.error(`TMDB API error (${item.sadrzaj_id}):`, apiError);
+                }
+            }
+
+            return res.render('popis', { popis: { naziv: naslov, sadrzaj } });
+        });
+    } else {
+        const mysql = require('mysql');
+        const connection = mysql.createConnection({
+            host: process.env.DB_HOST,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
+        });
+
+        connection.connect();
+
+        const sql = 'SELECT * FROM popisi WHERE id = ? AND korisnik_id = ?';
+        connection.query(sql, [popisId, userId], async (err, results) => {
+            connection.end();
+            if (err) {
+                console.error('Error fetching list:', err);
+                return res.status(500).send('Error retrieving list.');
+            }
+
+            if (results.length === 0) {
+                return res.status(404).send('List not found.');
+            }
+
+            const popis = results[0];
+            popis.sadrzaj = popis.sadrzaj ? JSON.parse(popis.sadrzaj) : [];
+
+            for (let item of popis.sadrzaj) {
+                const apiUrl = item.tip === "film"
+                    ? `https://api.themoviedb.org/3/movie/${item.id}?api_key=${process.env.TMDB_API_KEY}`
+                    : `https://api.themoviedb.org/3/tv/${item.id}?api_key=${process.env.TMDB_API_KEY}`;
+
+                try {
+                    const response = await axios.get(apiUrl);
+                    item.naziv = response.data.title || response.data.name;
+                    item.poster_path = response.data.poster_path;
+                } catch (apiError) {
+                    console.error(`TMDB API error (${item.id}):`, apiError);
+                    item.naziv = "Unknown";
+                    item.poster_path = null;
+                }
+            }
+
+            res.render('popis', { popis });
+        });
+    }
 });
+
 
 
 app.post("/popisi/obrisi-stavku", requireLogin, async (req, res) => {
@@ -1866,21 +1951,34 @@ app.get('/serija/:id/glumci', async (req, res) => {
 app.get('/serija/:id/detalji', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const serijaId = req.params.id;
+    const watchProvidersUrl = `https://api.themoviedb.org/3/tv/${serijaId}/watch/providers?api_key=${apiKey}`;
 
     try {
         const serijaResponse = await axios.get(`https://api.themoviedb.org/3/tv/${serijaId}?api_key=${apiKey}&append_to_response=credits`);
         const serija = serijaResponse.data;
 
+        const watchProvidersResponse = await axios.get(watchProvidersUrl);
+        const watchProviders = watchProvidersResponse.data.results || {};
+
+        const detailedProviders = {};
+        ['US', 'HR', 'GB', 'CA', 'DE', 'IT', 'FR', 'ES'].forEach(country => {
+            if (watchProviders[country]) {
+                detailedProviders[country] = watchProviders[country].flatrate || [];
+            }
+        });
+
         res.render('detalji_serija', {
             serija,
             userScore: serija.vote_average.toFixed(1),
             userScoreColor: getScoreColor(serija.vote_average),
+            watchProviders: detailedProviders,
         });
     } catch (error) {
         console.error("Error fetching series details:", error);
         res.status(500).send("Error loading details.");
     }
 });
+
 
 app.get('/serija/:id/seasons', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;

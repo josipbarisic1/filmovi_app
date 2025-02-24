@@ -1,0 +1,10 @@
+.wrapper {
+    padding: 20px;
+}
+
+.pad{
+    padding: 20px;
+    background-color: #d6e1cb;
+    border: 1px solid lightgray;
+    border-radius: 25px;
+}
