@@ -687,63 +687,75 @@ app.get('/api/search-autocomplete', async (req, res) => {
     })));
 });
 
-
-
-
 app.get('/pretrazi', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const naziv = req.query.naziv || '';
     const category = req.query.category || 'movie';
-    const page = req.query.page || 1;
+    let page = parseInt(req.query.page) || 1;
     const genre = req.query.genre || '';
-    const year = req.query.year || '';
+    const startYear = req.query.startYear || '';
+    const endYear = req.query.endYear || '';
     const language = req.query.language || '';
-    const sort = req.query.sort || 'alphabetical';
+    const runtimeMin = req.query.runtimeMin || '';
+    const runtimeMax = req.query.runtimeMax || '';
 
-    let url = `https://api.themoviedb.org/3/search/${category}?api_key=${apiKey}&query=${naziv}&page=${page}`;
-
-    if (genre) {
-        url += `&with_genres=${genre}`;
-    }
-    if (year) {
-        url += `&year=${year}`;
-    }
-    if (language) {
-        url += `&language=${language}`;
-    }
-
-    switch (sort) {
-        case 'alphabetical':
-            url += '&sort_by=original_title.asc'; 
-            break;
-        case 'latest':
-            url += '&sort_by=release_date.desc'; 
-            break;
-        case 'most_viewed':
-            url += '&sort_by=popularity.desc'; 
-            break;
-        case 'top_rated':
-            url += '&sort_by=vote_average.desc'; 
-            break;
-        default:
-            url += '&sort_by=original_title.asc';
-    }
-
-    //console.log(url);
     try {
-        const response = await axios.get(url);
-        //console.log(response.data);
+        let allResults = [];
+        const pageSize = 20;
+        const maxPagesToFetch = 5;
 
-        const data = response.data;
+        if (naziv) {
+            for (let i = 1; i <= maxPagesToFetch; i++) {
+                const searchUrl = `https://api.themoviedb.org/3/search/${category}?api_key=${apiKey}&query=${encodeURIComponent(naziv)}&page=${i}`;
 
-        const totalPages = data.total_pages;
-        const pagination = generatePagination(page, totalPages);
+                const searchResponse = await axios.get(searchUrl);
+                allResults = allResults.concat(searchResponse.data.results);
+                if (i >= searchResponse.data.total_pages) break;
+            }
+        } else {
+            for (let i = 1; i <= maxPagesToFetch; i++) {
+                let discoverUrl = `https://api.themoviedb.org/3/discover/${category}?api_key=${apiKey}&page=${i}`;
+                if (genre) discoverUrl += `&with_genres=${genre}`;
+                if (startYear && endYear) {
+                    discoverUrl += category === 'movie'
+                        ? `&primary_release_date.gte=${startYear}-01-01&primary_release_date.lte=${endYear}-12-31`
+                        : `&first_air_date.gte=${startYear}-01-01&first_air_date.lte=${endYear}-12-31`;
+                }
+                if (language) discoverUrl += `&with_original_language=${language}`;
+                if (runtimeMin && runtimeMax) discoverUrl += `&with_runtime.gte=${runtimeMin}&with_runtime.lte=${runtimeMax}`;
 
-        const genreResponse = await axios.get(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
+                const discoverResponse = await axios.get(discoverUrl);
+                allResults = allResults.concat(discoverResponse.data.results);
+                if (i >= discoverResponse.data.total_pages) break;
+            }
+        }
+
+        allResults = allResults.filter(item => {
+            const matchesGenre = genre ? item.genre_ids.includes(parseInt(genre)) : true;
+            const matchesYear = (startYear && endYear) ? (
+                category === 'movie'
+                    ? item.release_date && item.release_date >= `${startYear}-01-01` && item.release_date <= `${endYear}-12-31`
+                    : item.first_air_date && item.first_air_date >= `${startYear}-01-01` && item.first_air_date <= `${endYear}-12-31`
+            ) : true;
+            const matchesLanguage = language ? item.original_language === language : true;
+            const matchesRuntime = (runtimeMin && runtimeMax) ? (item.runtime >= runtimeMin && item.runtime <= runtimeMax) : true;
+
+            return matchesGenre && matchesYear && matchesLanguage && matchesRuntime;
+        });
+
+        const totalFilteredResults = allResults.length;
+        const totalPages = Math.max(1, Math.ceil(totalFilteredResults / pageSize));
+        page = Math.min(page, totalPages);
+
+        const results = allResults.slice((page - 1) * pageSize, page * pageSize);
+
+        const genreResponse = await axios.get(`https://api.themoviedb.org/3/genre/${category}/list?api_key=${apiKey}`);
         const genres = genreResponse.data.genres;
 
+        const pagination = generatePagination(page, totalPages);
+
         res.render('pretrazi_film', {
-            data,
+            data: { results, page, total_pages: totalPages },
             naziv,
             category,
             pagination,
@@ -751,83 +763,21 @@ app.get('/pretrazi', async (req, res) => {
             totalPages,
             genres,
             selectedGenre: genre,
-            selectedYear: year,
+            selectedYear: startYear,
+            endYear,
             language,
-            sort
+            runtimeMin,
+            runtimeMax
         });
     } catch (error) {
-        //console.error(error);
+        console.error("Greška kod dohvaćanja podataka:", error);
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
     }
 });
 
 
-app.post('/pretrazi', async (req, res) => {
-    const apiKey = process.env.TMDB_API_KEY;
-    const naziv = req.body.naziv || '';
-    const category = req.body.category || 'movie';
-    const page = req.query.page || 1;
-    const genre = req.body.genre || '';
-    const year = req.body.year || '';
-    const language = req.body.language || '';
-    const sort = req.body.sort || 'alphabetical';
 
-    let url = `https://api.themoviedb.org/3/search/${category}?api_key=${apiKey}&query=${naziv}&page=${page}`;
 
-    if (genre) {
-        url += `&with_genres=${genre}`;
-    }
-    if (year) {
-        url += `&year=${year}`;
-    }
-    if (language) {
-        url += `&language=${language}`;
-    }
-
-    switch (sort) {
-        case 'alphabetical':
-            url += '&sort_by=original_title.asc';
-            break;
-        case 'latest':
-            url += '&sort_by=release_date.desc';
-            break;
-        case 'most_viewed':
-            url += '&sort_by=popularity.desc';
-            break;
-        case 'top_rated':
-            url += '&sort_by=vote_average.desc';
-            break;
-        default:
-            url += '&sort_by=original_title.asc';
-    }
-
-    try {
-        const response = await axios.get(url);
-        const data = response.data;
-
-        const totalPages = data.total_pages;
-        const pagination = generatePagination(page, totalPages);
-
-        const genreResponse = await axios.get(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
-        const genres = genreResponse.data.genres;
-
-        res.render('pretrazi_film', {
-            data,
-            naziv,
-            category,
-            pagination,
-            page,
-            totalPages,
-            genres,
-            selectedGenre: genre,
-            selectedYear: year,
-            language,
-            sort
-        });
-    } catch (error) {
-        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
-    }
-});
 
 function generatePagination(currentPage, totalPages) {
     const maxVisiblePages = 5;

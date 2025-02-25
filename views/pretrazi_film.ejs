@@ -30,28 +30,23 @@
                         </select>
                     </li>
                     <li>
-                        <select name="year">
-                            <option value="">Godina</option>
-                            <% for (let i = 1900; i <= new Date().getFullYear(); i++) { %>
-                                <option value="<%= i %>" <%= i == selectedYear ? 'selected' : '' %>><%= i %></option>
-                            <% } %>
-                        </select>
+                        <input type="number" name="startYear" placeholder="Od godine" value="<%= selectedYear %>">
+                        <input type="number" name="endYear" placeholder="Do godine" value="<%= endYear %>">
                     </li>
                     <li>
                         <select name="language">
                             <option value="">Jezik</option>
                             <option value="en" <%= language === 'en' ? 'selected' : '' %>>Engleski</option>
                             <option value="hr" <%= language === 'hr' ? 'selected' : '' %>>Hrvatski</option>
+                            <option value="de" <%= language === 'de' ? 'selected' : '' %>>Njemački</option>
+                            <option value="fr" <%= language === 'fr' ? 'selected' : '' %>>Francuski</option>
                         </select>
                     </li>
                     <li>
-                        <ul>
-                            <li><a href="/movie/alphabetical">Abecedno</a></li>
-                            <li><a href="/movie/latest">Novi</a></li>
-                            <li><a href="/movie/most-viewed">Najgledaniji</a></li>
-                            <li><a href="/movie/top-rated">Najbolje ocijenjeni</a></li>
-                        </ul>                        
+                        <input type="number" name="runtimeMin" placeholder="Min trajanje (min)" value="<%= runtimeMin %>">
+                        <input type="number" name="runtimeMax" placeholder="Max trajanje (min)" value="<%= runtimeMax %>">
                     </li>
+                    
                     <li>
                         <button type="submit">Primijeni filtre</button>
                     </li>
