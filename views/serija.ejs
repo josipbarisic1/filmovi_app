@@ -124,11 +124,11 @@
                 </div>
                 <% if (watchProviders.link) { %>
                     <a href="<%= watchProviders.link %>" target="_blank" class="watch-link">
-                        See all options for <%= watchProviders.country %>
+                        See all options for <%= userLanguage %>
                     </a>
                 <% } %>
             <% } else { %>
-                <p>Currently unavailable for streaming.</p>
+                <p>Currently unavailable for streaming in in <%= userLanguage %>.</p>
             <% } %>
         </div>
 

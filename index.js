@@ -673,6 +673,22 @@ app.get('/profile/reviews', (req, res) => {
     });
 });
 
+app.get('/api/search-autocomplete', async (req, res) => {
+    const { query } = req.query;
+    if (!query) return res.json([]);
+
+    const response = await axios.get(`https://api.themoviedb.org/3/search/multi?api_key=${process.env.TMDB_API_KEY}&query=${query}`);
+
+    res.json(response.data.results.map(item => ({
+        name: item.title || item.name,
+        id: item.id,
+        type: item.media_type,
+        year: item.release_date ? item.release_date.split("-")[0] : item.first_air_date ? item.first_air_date.split("-")[0] : "N/A"
+    })));
+});
+
+
+
 
 app.get('/pretrazi', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
@@ -1624,10 +1640,22 @@ app.get('/film/:id', async (req, res) => {
         const preporuke = recommendationsResponse.data.results.slice(0, 7);
         const watchProviders = watchProvidersResponse.data.results || {};
 
+        let userLanguage = req.headers["accept-language"]?.split(",")[0]?.split("-")[0] || "en";
+
         let userCountry = req.headers["accept-language"]?.match(/-[A-Z]{2}/)?.[0]?.replace("-", "") || "US";
         if (!watchProviders[userCountry]) {
             userCountry = watchProviders["US"] ? "US" : Object.keys(watchProviders)[0] || "US";
         }
+
+        const countryMapping = {
+            "en": "US",
+            "hr": "HR",
+            "de": "DE",
+            "fr": "FR",
+            "es": "ES",
+            "it": "IT"
+        };
+        userCountry = countryMapping[userLanguage] || userCountry;
 
         const filteredProviders = {
             country: userCountry,
@@ -1707,6 +1735,7 @@ app.get('/film/:id', async (req, res) => {
                                     tmdbScoreColor,
                                     filmId,
                                     watchProviders: filteredProviders,
+                                    userLanguage: userCountry,
                                     isFavorite,
                                     isWatched,
                                     csrfToken: req.csrfToken()
@@ -1811,10 +1840,22 @@ app.get('/serija/:id', async (req, res) => {
         const preporuke = serija.recommendations?.results?.slice(0, 7) || [];
         const watchProviders = watchProvidersResponse.data.results || {};
 
+        let userLanguage = req.headers["accept-language"]?.split(",")[0]?.split("-")[0] || "en";
+
         let userCountry = req.headers["accept-language"]?.match(/-[A-Z]{2}/)?.[0]?.replace("-", "") || "US";
         if (!watchProviders[userCountry]) {
             userCountry = watchProviders["US"] ? "US" : Object.keys(watchProviders)[0] || "US";
         }
+
+        const countryMapping = {
+            "en": "US",
+            "hr": "HR",
+            "de": "DE",
+            "fr": "FR",
+            "es": "ES",
+            "it": "IT"
+        };
+        userCountry = countryMapping[userLanguage] || userCountry;
 
         const filteredProviders = {
             country: userCountry,
@@ -1894,6 +1935,7 @@ app.get('/serija/:id', async (req, res) => {
                                     tmdbScoreColor,
                                     serijaId,
                                     watchProviders: filteredProviders,
+                                    userLanguage: userCountry,
                                     isFavorite,
                                     isWatched,
                                     csrfToken: req.csrfToken()

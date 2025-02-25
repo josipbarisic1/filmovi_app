@@ -32,3 +32,41 @@
 .dropdown:hover .dropdown-menu {
     display: block;
 }
+
+
+.search-container {
+    position: relative;
+    display: inline-block;
+    width: 240px;
+}
+
+#search-box{
+    padding: 8px;
+    width: 222px;
+}
+
+.suggestions-dropdown {
+    position: absolute;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid black;
+    border-radius: 5px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: none;
+    z-index: 1001;
+}
+
+.suggestions-dropdown div {
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    color: black;
+    font-size: 0.8rem;
+    border-bottom: 1px solid black;
+}
+
+.suggestions-dropdown div:hover {
+    background: #f0f0f0;
+}

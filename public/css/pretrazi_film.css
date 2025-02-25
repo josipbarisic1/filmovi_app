@@ -102,12 +102,20 @@ header ul li a:hover {
     font-size: 14px;
 }
 
+.card-content-main{
+    flex: 1;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+
 .movie-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 220px)); 
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 220px));
+    gap: 25px;
     padding: 20px;
     justify-content: center;
+    max-width: 90%;
 }
 
 .movie-card {
@@ -227,6 +235,32 @@ header ul li a:hover {
     color: #fff;
     border: 1px solid #004a99;
 }
+
+#load-more {
+    display: block;
+    margin: 30px auto;
+    padding: 12px 25px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(135deg, #1f8b4c, #146b35);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+#load-more:hover {
+    background: linear-gradient(135deg, #146b35, #0f4d26);
+    transform: scale(1.05);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+#load-more:active {
+    transform: scale(0.95);
+}
+
 
 .top-list-h1{
     padding: 10px 0 0 30px;   
