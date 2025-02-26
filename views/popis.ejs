@@ -23,13 +23,13 @@
                             <img src="/img/no-image.png" alt="No Image Available">
                         <% } %>
                     </a>
-                    <p><%= item.naziv %> (<%= item.tip %>)</p>
+                    <p><%= item.naziv %></p>
                     <form action="/popisi/obrisi-stavku" method="POST">
                         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                         <input type="hidden" name="popis_id" value="<%= popis.id %>">
                         <input type="hidden" name="sadrzaj_id" value="<%= item.id %>">
                         <input type="hidden" name="tip_sadrzaja" value="<%= item.tip %>">
-                        <button type="submit" class="remove-item">✖</button>
+                        <button type="button" class="remove-item" onclick="confirmDelete(this)">✖</button>
                     </form>
                 </div>
             <% }) %>
@@ -40,6 +40,15 @@
 
 
     <%- include('partials/footer') %>
+
+    <script>
+        function confirmDelete(button) {
+            if (confirm("Are you sure you want to remove this item from the list?")) {
+                let form = button.closest("form");
+                form.submit();
+            }
+        }
+    </script>    
 
 </body>
 </html>

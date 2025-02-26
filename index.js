@@ -515,20 +515,31 @@ app.get('/profil', (req, res) => {
 
     connection.connect();
 
-    const query = `SELECT username, email_address, age, phone_number, gender, nadimak FROM korisnici WHERE id = ?`;
+    const userQuery = `SELECT username, email_address, age, phone_number, gender, nadimak FROM korisnici WHERE id = ?`;
+    const listsQuery = `SELECT id, naziv, tip_popisa FROM popisi WHERE korisnik_id = ?`;
 
-    connection.query(query, [korisnikId], (error, results) => {
-        connection.end();
-        if (error || results.length === 0) {
+    connection.query(userQuery, [korisnikId], (error, userResults) => {
+        if (error || userResults.length === 0) {
+            connection.end();
             console.error('Error fetching user profile:', error);
             return res.status(500).send('Error loading profile.');
         }
 
-        res.render('profil', {
-            korisnik: results[0]
+        connection.query(listsQuery, [korisnikId], (listError, listResults) => {
+            connection.end();
+            if (listError) {
+                console.error('Error fetching user lists:', listError);
+                return res.status(500).send('Error loading user lists.');
+            }
+
+            res.render('profil', {
+                korisnik: userResults[0],
+                lists: listResults
+            });
         });
     });
 });
+
 
 app.get('/profile/edit', (req, res) => {
     const korisnikId = req.session.userId;
@@ -702,7 +713,7 @@ app.get('/pretrazi', async (req, res) => {
     try {
         let allResults = [];
         const pageSize = 20;
-        const maxPagesToFetch = 5;
+        const maxPagesToFetch = 10;
 
         if (naziv) {
             for (let i = 1; i <= maxPagesToFetch; i++) {
@@ -776,9 +787,6 @@ app.get('/pretrazi', async (req, res) => {
 });
 
 
-
-
-
 function generatePagination(currentPage, totalPages) {
     const maxVisiblePages = 5;
     let pages = [];
@@ -850,6 +858,7 @@ const generatePagination = (currentPage, totalPages) => {
     return rangeWithDots;
 }; */
 
+/*
 const updateRenderParams = async (url, title, category, req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const page = parseInt(req.query.page) || 1;
@@ -880,39 +889,135 @@ const updateRenderParams = async (url, title, category, req, res) => {
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
     }
 };
+*/
+
+const updateRenderParams = async (url, title, category, req, res) => {
+    const apiKey = process.env.TMDB_API_KEY;
+    const page = parseInt(req.query.page) || 1;
+    const genre = req.query.genre || '';
+    const startDate = req.query.startDate || '';
+    const endDate = req.query.endDate || '';
+    const language = req.query.language || '';
+    const runtimeMin = req.query.runtimeMin || '';
+    const runtimeMax = req.query.runtimeMax || '';
+
+    let filterUrl = `${url}&page=${page}`;
+
+    if (genre) filterUrl += `&with_genres=${genre}`;
+    if (startDate && endDate) {
+        filterUrl += category === 'movie' 
+            ? `&primary_release_date.gte=${startDate}&primary_release_date.lte=${endDate}`
+            : `&first_air_date.gte=${startDate}&first_air_date.lte=${endDate}`;
+    }
+    if (language) filterUrl += `&with_original_language=${language}`;
+    if (runtimeMin && runtimeMax) filterUrl += `&with_runtime.gte=${runtimeMin}&with_runtime.lte=${runtimeMax}`;
+
+    try {
+        console.log(`Fetching TMDB API: ${filterUrl}`);
+        const response = await axios.get(filterUrl);
+        const data = response.data;
+        const totalPages = data.total_pages;
+
+        const genreResponse = await axios.get(`https://api.themoviedb.org/3/genre/${category}/list?api_key=${apiKey}`);
+        const genres = genreResponse.data.genres;
+
+        res.render('top_lista', {
+            title,
+            data,
+            category,
+            page,
+            totalPages,
+            loadMore: page < totalPages,
+            nextPage: page + 1,
+            genres,
+            selectedGenre: genre,
+            startDate,
+            endDate, 
+            language,
+            runtimeMin,
+            runtimeMax       
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
+    }
+};
+
+
+
+
+const formatDate = (date) => date.toISOString().split('T')[0];
 
 app.get('/:category/latest', async (req, res) => {
     const category = req.params.category;
     const apiKey = process.env.TMDB_API_KEY;
     const page = parseInt(req.query.page) || 1;
+    const genre = req.query.genre || '';
+    const language = req.query.language || '';
+    const runtimeMin = req.query.runtimeMin || '';
+    const runtimeMax = req.query.runtimeMax || '';
 
-    let url, title;
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+
+    let url = `https://api.themoviedb.org/3/discover/${category}?api_key=${apiKey}&page=${page}&sort_by=popularity.desc`;
+
     if (category === 'movie') {
-        url = `https://api.themoviedb.org/3/movie/now_playing?api_key=${apiKey}&page=${page}`;
-        title = "Latest Movies";
+        url += `&primary_release_date.gte=${formatDate(thirtyDaysAgo)}&primary_release_date.lte=${formatDate(today)}`;
+        url += `&with_release_type=2|3`;
     } else if (category === 'tv') {
-        url = `https://api.themoviedb.org/3/tv/airing_today?api_key=${apiKey}&page=${page}`;
-        title = "Latest TV Shows";
+        url += `&first_air_date.gte=${formatDate(today)}&first_air_date.lte=${formatDate(today)}`;
+        url += `&with_watch_monetization_types=flatrate|free|ads|rent|buy`;
     } else {
-        return res.status(400).send('Nevažeća kategorija.');
+        return res.status(400).send('Invalid category.');
     }
 
-    await updateRenderParams(url, title, category, req, res);
+    if (genre) url += `&with_genres=${genre}`;
+    if (language) url += `&with_original_language=${language}`;
+    if (runtimeMin && runtimeMax) url += `&with_runtime.gte=${runtimeMin}&with_runtime.lte=${runtimeMax}`;
+
+    await updateRenderParams(url, `Latest ${category === 'movie' ? 'Movies' : 'TV Shows'}`, category, req, res);
 });
 
 app.get('/:category/most-viewed', async (req, res) => {
     const category = req.params.category;
     const apiKey = process.env.TMDB_API_KEY;
-    const url = `https://api.themoviedb.org/3/discover/${category}?api_key=${apiKey}&sort_by=popularity.desc`;
+    const page = parseInt(req.query.page) || 1;
+    const genre = req.query.genre || '';
+    const language = req.query.language || '';
+    const runtimeMin = req.query.runtimeMin || '';
+    const runtimeMax = req.query.runtimeMax || '';
+    const minVotes = 100;
+
+    let url = `https://api.themoviedb.org/3/discover/${category}?api_key=${apiKey}&page=${page}&sort_by=popularity.desc&vote_count.gte=${minVotes}`;
+
+    if (genre) url += `&with_genres=${genre}`;
+    if (language) url += `&with_original_language=${language}`;
+    if (runtimeMin && runtimeMax) url += `&with_runtime.gte=${runtimeMin}&with_runtime.lte=${runtimeMax}`;
+
     await updateRenderParams(url, `Most Viewed ${category === 'movie' ? 'Movies' : 'TV Shows'}`, category, req, res);
 });
 
 app.get('/:category/top-rated', async (req, res) => {
     const category = req.params.category;
     const apiKey = process.env.TMDB_API_KEY;
-    const url = `https://api.themoviedb.org/3/${category}/top_rated?api_key=${apiKey}`;
+    const page = parseInt(req.query.page) || 1;
+    const genre = req.query.genre || '';
+    const language = req.query.language || '';
+    const runtimeMin = req.query.runtimeMin || '';
+    const runtimeMax = req.query.runtimeMax || '';
+    const minVotes = 500;
+
+    let url = `https://api.themoviedb.org/3/discover/${category}?api_key=${apiKey}&page=${page}&sort_by=vote_average.desc&vote_count.gte=${minVotes}`;
+
+    if (genre) url += `&with_genres=${genre}`;
+    if (language) url += `&with_original_language=${language}`;
+    if (runtimeMin && runtimeMax) url += `&with_runtime.gte=${runtimeMin}&with_runtime.lte=${runtimeMax}`;
+
     await updateRenderParams(url, `Top Rated ${category === 'movie' ? 'Movies' : 'TV Shows'}`, category, req, res);
 });
+
 
 app.get('/:category/alphabetical', async (req, res) => {
     const category = req.params.category;
@@ -921,15 +1026,7 @@ app.get('/:category/alphabetical', async (req, res) => {
     await updateRenderParams(url, `Alphabetical ${category === 'movie' ? 'Movies' : 'TV Shows'}`, category, req, res);
 });
 
-app.get('/people', async (req, res) => {
-    try {
-        const response = await axios.get(`https://api.themoviedb.org/3/person/popular?api_key=${process.env.TMDB_API_KEY}`);
-        res.render('osobe', { people: response.data.results });
-    } catch (error) {
-        console.error("Error fetching popular people:", error);
-        res.render('osobe', { people: [] });
-    }
-});
+
 
 
 
@@ -2378,6 +2475,16 @@ app.get('/osoba/:id', async (req, res) => {
     } catch (error) {
         console.error('Error fetching person data:', error);
         res.status(500).send('An error occurred while fetching person data.');
+    }
+});
+
+app.get('/people', async (req, res) => {
+    try {
+        const response = await axios.get(`https://api.themoviedb.org/3/person/popular?api_key=${process.env.TMDB_API_KEY}`);
+        res.render('osobe', { people: response.data.results });
+    } catch (error) {
+        console.error("Error fetching popular people:", error);
+        res.render('osobe', { people: [] });
     }
 });
 

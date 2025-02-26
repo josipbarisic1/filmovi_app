@@ -54,9 +54,88 @@
     display: none;
 }
 
+
+.profile-section {
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(255, 255, 255, 0.1);
+}
+
 .review-card {
-    background: #f5f5f5;
+    background: rgba(255, 255, 255, 0.1);
     padding: 15px;
     margin-bottom: 10px;
-    border-radius: 5px;
+    border-radius: 8px;
+    border-left: 4px solid #337700;
+    border-top: 4px solid #337700;
+    border-bottom: 4px solid #337700;
+    transition: 0.3s;
 }
+
+.review-card:hover {
+    transform: scale(1.02);
+}
+
+.list-category {
+    margin-bottom: 20px;
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-section h2 {
+    padding-bottom: 20px;
+}
+
+.profile-section h3 {
+    color: rgb(128 133 135);
+    margin-bottom: 5px;
+}
+
+.list-card h4 {
+    margin: 0;
+}
+
+.list-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 6px;
+    border-left: 4px solid #2196F3;
+    border-top: 4px solid #2196F3;
+    border-bottom: 4px solid #2196F3;
+    transition: 0.3s;
+}
+
+.list-card a {
+    color: #ffcc00;
+    text-decoration: none;
+}
+
+.list-card a:hover {
+    text-decoration: underline;
+}
+
+.list-card:hover {
+    transform: scale(1.03);
+}
+
+
+.review-card h3, .list-card h3 {
+    margin: 0;
+    color: #1f9900;
+}
+
+.review-card p strong {
+    color: #49bd00;
+}
+
+.review-card a, .list-card a {
+    color: #236cf1;
+    text-decoration: none;
+}
+
+.review-card a:hover, .list-card a:hover {
+    text-decoration: underline;
+}
+

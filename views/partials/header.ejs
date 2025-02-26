@@ -67,7 +67,7 @@
 </header>
 
 <script>
-    document.getElementById("search-box").addEventListener("input", async function () {
+    document.getElementById("search-box").addEventListener("input", async function ()  {
         const query = this.value.trim();
         const suggestionsBox = document.getElementById("suggestions");
 
@@ -80,32 +80,33 @@
         const response = await fetch(`/api/search-autocomplete?query=${query}`);
         const suggestions = await response.json();
         
-        suggestionsBox.innerHTML = suggestions.map(item =>
-            `<div onclick="selectSuggestion('${item.name}', ${item.id}, '${item.type}')">
-                ${item.name} (${item.year})
-            </div>`
-        ).join("");
+        suggestionsBox.innerHTML = suggestions.map(item => {
+            let displayText = item.name;
+            if (item.type !== "person" && item.year !== "N/A") {
+                displayText += ` (${item.year})`;
+            }
+            return `<div onclick="selectSuggestion('${item.name}', ${item.id}, '${item.type}')">
+                        ${displayText}
+                    </div>`;
+        }).join("");
 
         suggestionsBox.style.display = suggestions.length ? "block" : "none";
     });
 
-
-
-
     function selectSuggestion(name, id, type) {
-    document.getElementById("search-box").value = name;
-    let url;
-    
-    if (type === "tv") {
-        url = `/serija/${id}`;
-    } else if (type === "person") {
-        url = `/osoba/${id}`;
-    } else {
-        url = `/film/${id}`;
+        document.getElementById("search-box").value = name;
+        let url;
+        
+        if (type === "tv") {
+            url = `/serija/${id}`;
+        } else if (type === "person") {
+            url = `/osoba/${id}`;
+        } else {
+            url = `/film/${id}`;
+        }
+        
+        window.location.href = url;
     }
-    
-    window.location.href = url;
-}
 
 
     document.addEventListener("click", function (event) {

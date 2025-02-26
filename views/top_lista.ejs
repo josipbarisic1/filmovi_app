@@ -14,6 +14,47 @@
         <h1 class="top-list-h1"><%= title %></h1>
 
         <% if (data && data.results.length > 0) { %>
+            <div class="filter">
+                <form action="" method="get">
+                    <ul>
+                        <li>Filter Results:</li>
+                        <li>
+                            <select name="genre">
+                                <option value="">Genre</option>
+                                <% genres.forEach(genre => { %>
+                                    <option value="<%= genre.id %>" <%= genre.id == selectedGenre ? 'selected' : '' %>><%= genre.name %></option>
+                                <% }) %>
+                            </select>
+                        </li>
+                        <li>
+                            <label>From Date:</label>
+                            <input type="date" name="startDate" value="<%= startDate || '' %>">
+                            <label>To Date:</label>
+                            <input type="date" name="endDate" value="<%= endDate || '' %>">
+                        </li>                        
+                        <li>
+                            <select name="language">
+                                <option value="">Language</option>
+                                <option value="en" <%= language === 'en' ? 'selected' : '' %>>English</option>
+                                <option value="hr" <%= language === 'hr' ? 'selected' : '' %>>Croatian</option>
+                                <option value="de" <%= language === 'de' ? 'selected' : '' %>>German</option>
+                                <option value="fr" <%= language === 'fr' ? 'selected' : '' %>>French</option>
+                            </select>
+                        </li>
+                        <li>
+                            <label>Runtime (min):</label>
+                            <input type="range" min="0" max="400" value="<%= runtimeMin || 0 %>" name="runtimeMin" id="runtimeMinSlider">
+                            <span id="runtimeMinValue"><%= runtimeMin || 0 %></span>
+                            <input type="range" min="0" max="400" value="<%= runtimeMax || 400 %>" name="runtimeMax" id="runtimeMaxSlider">
+                            <span id="runtimeMaxValue"><%= runtimeMax || 400 %></span>
+                        </li>
+                        <li>
+                            <button type="submit">Apply Filters</button>
+                        </li>
+                    </ul>
+                </form>             
+            </div>
+
             <div class="movie-grid">
                 <% data.results.forEach(item => { %>
                     <a href="<%= category === 'movie' ? `/film/${item.id}` : `/serija/${item.id}` %>" class="movie-card-link">
@@ -42,8 +83,17 @@
             </div>
 
             <% if (loadMore) { %>
-                <button id="load-more" data-next="<%= nextPage %>">Load More</button>
-            <% } %>
+                <button id="load-more"
+                        data-next="<%= nextPage %>"
+                        data-genre="<%= selectedGenre %>"
+                        data-start-date="<%= startDate %>"
+                        data-end-date="<%= endDate %>"
+                        data-language="<%= language %>"
+                        data-runtime-min="<%= runtimeMin %>"
+                        data-runtime-max="<%= runtimeMax %>">
+                    Load More
+                </button>
+                    <% } %>
         <% } else { %>
             <p>Nema dostupnih podataka.</p>
         <% } %>
@@ -52,48 +102,70 @@
     <%- include('partials/footer') %>
 
     <script>
-        document.getElementById("load-more")?.addEventListener("click", function() {
-            const nextPage = this.getAttribute("data-next");
-            fetch(`${window.location.pathname}?page=${nextPage}`)
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, "text/html");
-                const newMovies = doc.querySelector(".movie-grid")?.innerHTML;
-                if (newMovies) {
-                    document.querySelector(".movie-grid").innerHTML += newMovies;
-                }
-                
-                const newLoadMore = doc.querySelector("#load-more");
-                if (newLoadMore) {
-                    this.setAttribute("data-next", newLoadMore.getAttribute("data-next"));
-                } else {
-                    this.remove();
-                }
-            })
-            .catch(error => console.error("Load More Error:", error));
-        });
+        document.getElementById("load-more")?.addEventListener("click", async function() {
+    const nextPage = this.getAttribute("data-next");
+    const genre = this.getAttribute("data-genre");
+    const startDate = this.getAttribute("data-start-date");
+    const endDate = this.getAttribute("data-end-date");
+    const language = this.getAttribute("data-language");
+    const runtimeMin = this.getAttribute("data-runtime-min");
+    const runtimeMax = this.getAttribute("data-runtime-max");
 
-        document.addEventListener("DOMContentLoaded", function () {
+    let url = `${window.location.pathname}?page=${nextPage}`;
+
+    if (genre) url += `&genre=${genre}`;
+    if (startDate && endDate) url += `&startDate=${startDate}&endDate=${endDate}`;
+    if (language) url += `&language=${language}`;
+    if (runtimeMin && runtimeMax) url += `&runtimeMin=${runtimeMin}&runtimeMax=${runtimeMax}`;
+
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+            const newMovies = doc.querySelector(".movie-grid")?.innerHTML;
+            if (newMovies) {
+                document.querySelector(".movie-grid").innerHTML += newMovies;
+            }
+
+            const newLoadMore = doc.querySelector("#load-more");
+            if (newLoadMore) {
+                this.setAttribute("data-next", newLoadMore.getAttribute("data-next"));
+                this.setAttribute("data-genre", newLoadMore.getAttribute("data-genre"));
+                this.setAttribute("data-start-date", newLoadMore.getAttribute("data-start-date"));
+                this.setAttribute("data-end-date", newLoadMore.getAttribute("data-end-date"));
+                this.setAttribute("data-language", newLoadMore.getAttribute("data-language"));
+                this.setAttribute("data-runtime-min", newLoadMore.getAttribute("data-runtime-min"));
+                this.setAttribute("data-runtime-max", newLoadMore.getAttribute("data-runtime-max"));
+            } else {
+                this.remove();
+            }
+        })
+        .catch(error => console.error("Load More Error:", error))
+        .then(() => {
+            applyTruncation();
+        });
+});
+
+
+
+        function applyTruncation() {
             const descriptions = document.querySelectorAll(".movie-details p");
-    
             descriptions.forEach(function (description) {
-                const maxLength = 175; 
+                const maxLength = 175;
                 let text = description.textContent.trim();
-    
+
                 if (text.length > maxLength) {
                     let truncatedText = text.substr(0, maxLength);
                     truncatedText = truncatedText.substr(0, Math.min(truncatedText.length, truncatedText.lastIndexOf(" ")));
                     description.textContent = truncatedText + "...";
                 }
             });
-    
-            const titles = document.querySelectorAll(".movie-title-full, .movie-title-mobile");
-    
-            titles.forEach(function (title) {
-                const maxWords = 15; 
-                let text = title.textContent.trim();
 
+            const titles = document.querySelectorAll(".movie-title-full, .movie-title-mobile");
+            titles.forEach(function (title) {
+                const maxWords = 15;
+                let text = title.textContent.trim();
                 const yearMatch = text.match(/\((\d{4})\)$/);
                 let titleWithoutYear = yearMatch ? text.substring(0, text.lastIndexOf('(')).trim() : text;
                 let words = titleWithoutYear.split(" ");
@@ -105,7 +177,25 @@
                     title.textContent = titleWithoutYear + (yearMatch ? ` (${yearMatch[1]})` : "");
                 }
             });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            applyTruncation();
         });
+
+        const runtimeMinSlider = document.getElementById("runtimeMinSlider");
+        const runtimeMaxSlider = document.getElementById("runtimeMaxSlider");
+        const runtimeMinValue = document.getElementById("runtimeMinValue");
+        const runtimeMaxValue = document.getElementById("runtimeMaxValue");
+
+        runtimeMinSlider.addEventListener("input", () => {
+            runtimeMinValue.textContent = runtimeMinSlider.value;
+        });
+
+        runtimeMaxSlider.addEventListener("input", () => {
+            runtimeMaxValue.textContent = runtimeMaxSlider.value;
+        });
+
     </script>
 </body>
 </html>

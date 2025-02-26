@@ -44,11 +44,49 @@
     
                 <section id="lists" class="profile-section hidden">
                     <h2>My Lists</h2>
-                    <ul id="user-lists"></ul>
-                    <p id="see-all-lists" class="hidden">
-                        <a href="/popisi">See All Lists</a>
-                    </p>
+                
+                    <% let movieLists = lists.filter(list => list.tip_popisa === 'filmovi'); %>
+                    <% let tvLists = lists.filter(list => list.tip_popisa === 'serije'); %>
+                    <% let mixedLists = lists.filter(list => list.tip_popisa === 'mixed'); %>
+                
+                    <% if (movieLists.length > 0) { %>
+                        <h3>Movies</h3>
+                        <div class="list-category">
+                            <% movieLists.forEach(list => { %>
+                                <div class="list-card">
+                                    <h4><a href="/popisi/<%= list.id %>"><%= list.naziv %></a></h4>
+                                </div>
+                            <% }) %>
+                        </div>
+                    <% } %>
+                
+                    <% if (tvLists.length > 0) { %>
+                        <h3>TV Shows</h3>
+                        <div class="list-category">
+                            <% tvLists.forEach(list => { %>
+                                <div class="list-card">
+                                    <h4><a href="/popisi/<%= list.id %>"><%= list.naziv %></a></h4>
+                                </div>
+                            <% }) %>
+                        </div>
+                    <% } %>
+                
+                    <% if (mixedLists.length > 0) { %>
+                        <h3>Mixed</h3>
+                        <div class="list-category">
+                            <% mixedLists.forEach(list => { %>
+                                <div class="list-card">
+                                    <h4><a href="/popisi/<%= list.id %>"><%= list.naziv %></a></h4>
+                                </div>
+                            <% }) %>
+                        </div>
+                    <% } %>
+                
+                    <% if (lists.length === 0) { %>
+                        <p>No lists available.</p>
+                    <% } %>
                 </section>
+                
     
                 <section id="reviews" class="profile-section hidden">
                     <h2>My Reviews</h2>
