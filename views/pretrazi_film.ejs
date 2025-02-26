@@ -18,7 +18,7 @@
                     <option value="movie" <%= category === 'movie' ? 'selected' : '' %>>Movies</option>
                     <option value="tv" <%= category === 'tv' ? 'selected' : '' %>>TV Shows</option>
                 </select>
-
+            
                 <ul>
                     <li>Filtriraj pretragu:</li>
                     <li>
@@ -30,8 +30,10 @@
                         </select>
                     </li>
                     <li>
-                        <input type="number" name="startYear" placeholder="Od godine" value="<%= selectedYear %>">
-                        <input type="number" name="endYear" placeholder="Do godine" value="<%= endYear %>">
+                        <label>Od datuma:</label>
+                        <input type="date" name="startDate" value="<%= startDate || '' %>">
+                        <label>Do datuma:</label>
+                        <input type="date" name="endDate" value="<%= endDate || '' %>">
                     </li>
                     <li>
                         <select name="language">
@@ -42,11 +44,6 @@
                             <option value="fr" <%= language === 'fr' ? 'selected' : '' %>>Francuski</option>
                         </select>
                     </li>
-                    <li>
-                        <input type="number" name="runtimeMin" placeholder="Min trajanje (min)" value="<%= runtimeMin %>">
-                        <input type="number" name="runtimeMax" placeholder="Max trajanje (min)" value="<%= runtimeMax %>">
-                    </li>
-                    
                     <li>
                         <button type="submit">Primijeni filtre</button>
                     </li>
@@ -73,7 +70,6 @@
                                         %><%= item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : '/images/placeholder2.jpg' %><%
                                     } 
                                 %>" alt="Poster za <%= item.title || item.name %>">
-
                             </div>
                             <div class="movie-details">
                                 <h2 class="movie-title-full">
@@ -88,13 +84,11 @@
                     </a>
                 <% }) %>
             </div>
-            
+
             <div class="pagination">
                 <% if (data.page > 1) { %>
                     <% if (naziv) { %>
-                        <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&genre=<%= selectedGenre %>&year=<%= selectedYear %>&language=<%= language %>&page=<%= data.page - 1 %>">Prethodna</a>
-                    <% } else if (sort) { %>
-                        <a href="/<%= category %>/<%= sort.replace('_', '-') %>?page=<%= data.page - 1 %>">Prethodna</a>
+                        <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&genre=<%= selectedGenre %>&startDate=<%= startDate %>&endDate=<%= endDate %>&language=<%= language %>&page=<%= data.page - 1 %>">Prethodna</a>
                     <% } %>
                 <% } %>
 
@@ -105,22 +99,18 @@
                         <strong><%= p %></strong>
                     <% } else { %>
                         <% if (naziv) { %>
-                            <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&genre=<%= selectedGenre %>&year=<%= selectedYear %>&language=<%= language %>&page=<%= p %>"><%= p %></a>
-                        <% } else if (sort) { %>
-                            <a href="/<%= category %>/<%= sort.replace('_', '-') %>?page=<%= p %>"><%= p %></a>
+                            <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&genre=<%= selectedGenre %>&startDate=<%= startDate %>&endDate=<%= endDate %>&language=<%= language %>&page=<%= p %>"><%= p %></a>
                         <% } %>
                     <% } %>
                 <% }) %>
 
                 <% if (data.page < data.total_pages) { %>
                     <% if (naziv) { %>
-                        <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&genre=<%= selectedGenre %>&year=<%= selectedYear %>&language=<%= language %>&page=<%= data.page + 1 %>">Sljedeća</a>
-                    <% } else if (sort) { %>
-                        <a href="/<%= category %>/<%= sort.replace('_', '-') %>?page=<%= data.page + 1 %>">Sljedeća</a>
+                        <a href="/pretrazi?category=<%= category %>&naziv=<%= naziv %>&genre=<%= selectedGenre %>&startDate=<%= startDate %>&endDate=<%= endDate %>&language=<%= language %>&page=<%= data.page + 1 %>">Sljedeća</a>
                     <% } %>
                 <% } %>
             </div>
-
+            
         <% } else { %>
             <p>Nema rezultata za pretraživanje.</p>
         <% } %>

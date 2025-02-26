@@ -703,22 +703,27 @@ app.get('/pretrazi', async (req, res) => {
     const naziv = req.query.naziv || '';
     const category = req.query.category || 'movie';
     let page = parseInt(req.query.page) || 1;
-    const genre = req.query.genre || '';
-    const startYear = req.query.startYear || '';
-    const endYear = req.query.endYear || '';
+    let genre = req.query.genre || '';
+    const startDate = req.query.startDate || null;
+    const endDate = req.query.endDate || null;
     const language = req.query.language || '';
-    const runtimeMin = req.query.runtimeMin || '';
-    const runtimeMax = req.query.runtimeMax || '';
 
     try {
         let allResults = [];
         const pageSize = 20;
         const maxPagesToFetch = 10;
+        const excludeGenres = category === 'tv' ? '10767,10763' : '';
+
+        const genreResponse = await axios.get(`https://api.themoviedb.org/3/genre/${category}/list?api_key=${apiKey}`);
+        const availableGenres = genreResponse.data.genres.map(g => g.id.toString());
+
+        if (genre && !availableGenres.includes(genre)) {
+            genre = '';
+        }
 
         if (naziv) {
             for (let i = 1; i <= maxPagesToFetch; i++) {
                 const searchUrl = `https://api.themoviedb.org/3/search/${category}?api_key=${apiKey}&query=${encodeURIComponent(naziv)}&page=${i}`;
-
                 const searchResponse = await axios.get(searchUrl);
                 allResults = allResults.concat(searchResponse.data.results);
                 if (i >= searchResponse.data.total_pages) break;
@@ -727,13 +732,13 @@ app.get('/pretrazi', async (req, res) => {
             for (let i = 1; i <= maxPagesToFetch; i++) {
                 let discoverUrl = `https://api.themoviedb.org/3/discover/${category}?api_key=${apiKey}&page=${i}`;
                 if (genre) discoverUrl += `&with_genres=${genre}`;
-                if (startYear && endYear) {
+                if (excludeGenres) discoverUrl += `&without_genres=${excludeGenres}`;
+                if (startDate && endDate) {
                     discoverUrl += category === 'movie'
-                        ? `&primary_release_date.gte=${startYear}-01-01&primary_release_date.lte=${endYear}-12-31`
-                        : `&first_air_date.gte=${startYear}-01-01&first_air_date.lte=${endYear}-12-31`;
+                        ? `&primary_release_date.gte=${startDate}&primary_release_date.lte=${endDate}`
+                        : `&first_air_date.gte=${startDate}&first_air_date.lte=${endDate}`;
                 }
                 if (language) discoverUrl += `&with_original_language=${language}`;
-                if (runtimeMin && runtimeMax) discoverUrl += `&with_runtime.gte=${runtimeMin}&with_runtime.lte=${runtimeMax}`;
 
                 const discoverResponse = await axios.get(discoverUrl);
                 allResults = allResults.concat(discoverResponse.data.results);
@@ -743,15 +748,12 @@ app.get('/pretrazi', async (req, res) => {
 
         allResults = allResults.filter(item => {
             const matchesGenre = genre ? item.genre_ids.includes(parseInt(genre)) : true;
-            const matchesYear = (startYear && endYear) ? (
-                category === 'movie'
-                    ? item.release_date && item.release_date >= `${startYear}-01-01` && item.release_date <= `${endYear}-12-31`
-                    : item.first_air_date && item.first_air_date >= `${startYear}-01-01` && item.first_air_date <= `${endYear}-12-31`
-            ) : true;
+            const releaseDate = item.release_date || item.first_air_date || '';
+            const matchesDate = (startDate && endDate && releaseDate)
+                ? (releaseDate >= startDate && releaseDate <= endDate)
+                : true;
             const matchesLanguage = language ? item.original_language === language : true;
-            const matchesRuntime = (runtimeMin && runtimeMax) ? (item.runtime >= runtimeMin && item.runtime <= runtimeMax) : true;
-
-            return matchesGenre && matchesYear && matchesLanguage && matchesRuntime;
+            return matchesGenre && matchesDate && matchesLanguage;
         });
 
         const totalFilteredResults = allResults.length;
@@ -759,9 +761,6 @@ app.get('/pretrazi', async (req, res) => {
         page = Math.min(page, totalPages);
 
         const results = allResults.slice((page - 1) * pageSize, page * pageSize);
-
-        const genreResponse = await axios.get(`https://api.themoviedb.org/3/genre/${category}/list?api_key=${apiKey}`);
-        const genres = genreResponse.data.genres;
 
         const pagination = generatePagination(page, totalPages);
 
@@ -772,13 +771,11 @@ app.get('/pretrazi', async (req, res) => {
             pagination,
             page,
             totalPages,
-            genres,
+            genres: genreResponse.data.genres,
             selectedGenre: genre,
-            selectedYear: startYear,
-            endYear,
-            language,
-            runtimeMin,
-            runtimeMax
+            startDate,
+            endDate,
+            language
         });
     } catch (error) {
         console.error("Greška kod dohvaćanja podataka:", error);
