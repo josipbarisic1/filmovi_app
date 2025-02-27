@@ -44,50 +44,9 @@
     
                 <section id="lists" class="profile-section hidden">
                     <h2>My Lists</h2>
-                
-                    <% let movieLists = lists.filter(list => list.tip_popisa === 'filmovi'); %>
-                    <% let tvLists = lists.filter(list => list.tip_popisa === 'serije'); %>
-                    <% let mixedLists = lists.filter(list => list.tip_popisa === 'mixed'); %>
-                
-                    <% if (movieLists.length > 0) { %>
-                        <h3>Movies</h3>
-                        <div class="list-category">
-                            <% movieLists.forEach(list => { %>
-                                <div class="list-card">
-                                    <h4><a href="/popisi/<%= list.id %>"><%= list.naziv %></a></h4>
-                                </div>
-                            <% }) %>
-                        </div>
-                    <% } %>
-                
-                    <% if (tvLists.length > 0) { %>
-                        <h3>TV Shows</h3>
-                        <div class="list-category">
-                            <% tvLists.forEach(list => { %>
-                                <div class="list-card">
-                                    <h4><a href="/popisi/<%= list.id %>"><%= list.naziv %></a></h4>
-                                </div>
-                            <% }) %>
-                        </div>
-                    <% } %>
-                
-                    <% if (mixedLists.length > 0) { %>
-                        <h3>Mixed</h3>
-                        <div class="list-category">
-                            <% mixedLists.forEach(list => { %>
-                                <div class="list-card">
-                                    <h4><a href="/popisi/<%= list.id %>"><%= list.naziv %></a></h4>
-                                </div>
-                            <% }) %>
-                        </div>
-                    <% } %>
-                
-                    <% if (lists.length === 0) { %>
-                        <p>No lists available.</p>
-                    <% } %>
+                    <div id="user-lists"></div>
                 </section>
-                
-    
+
                 <section id="reviews" class="profile-section hidden">
                     <h2>My Reviews</h2>
                     <div id="user-reviews"></div>
@@ -95,6 +54,9 @@
             </div>
         </div>
     </main>
+
+    <%- include('partials/footer') %>
+
     
 
     <script>
@@ -122,31 +84,109 @@
                     } else {
                         reviewsNav.classList.add("hidden");
                     }
+
+                    if (section === "lists") {
+                        fetchLists();
+                    }
                 });
             });
-    
+
+            function categorizeItems(items) {
+                const categorized = { movies: [], tvShows: [] };
+                items.forEach(item => {
+                    if (item.tip === "film") {
+                        categorized.movies.push(item);
+                    } else {
+                        categorized.tvShows.push(item);
+                    }
+                });
+                return categorized;
+            }
+
             async function fetchLists() {
                 try {
                     const response = await fetch('/profile/lists');
-                    const lists = await response.json();
-    
+                    const { lists, favorites, watched } = await response.json();
+
                     listContainer.innerHTML = "";
-    
-                    if (lists.length === 0) {
-                        listContainer.innerHTML = "<p>No lists available.</p>";
+
+                    if (favorites.length > 0 || watched.length > 0 || lists.length > 0) {
+                        const categorizedFavorites = categorizeItems(favorites);
+                        const categorizedWatched = categorizeItems(watched);
+
+                        if (favorites.length > 0) {
+                            listContainer.innerHTML += `<h3>Favorites</h3>`;
+                            listContainer.innerHTML += generateFavoritesHTML(favorites);
+                        }
+
+                        if (watched.length > 0) {
+                            listContainer.innerHTML += `<h3>Watched</h3>`;
+                            listContainer.innerHTML += generateWatchedHTML(watched);
+                        }
+
+                        if (lists.length > 0) {
+                            const categorizedLists = {
+                                movies: lists.filter(list => list.tip_popisa === "filmovi"),
+                                tvShows: lists.filter(list => list.tip_popisa === "serije"),
+                                mixed: lists.filter(list => list.tip_popisa === "mixed")
+                            };
+
+                            if (categorizedLists.movies.length > 0) {
+                                listContainer.innerHTML += `<h4>Movies</h4>`;
+                                listContainer.innerHTML += generateListHTML(categorizedLists.movies, "popisi");
+                            }
+                            if (categorizedLists.tvShows.length > 0) {
+                                listContainer.innerHTML += `<h4>TV Shows</h4>`;
+                                listContainer.innerHTML += generateListHTML(categorizedLists.tvShows, "popisi");
+                            }
+                            if (categorizedLists.mixed.length > 0) {
+                                listContainer.innerHTML += `<h4>Mixed</h4>`;
+                                listContainer.innerHTML += generateListHTML(categorizedLists.mixed, "popisi");
+                            }
+                        }
                     } else {
-                        lists.forEach(list => {
-                            const li = document.createElement("li");
-                            li.innerHTML = `<a href="/popisi/${list.id}">${list.naziv} (${list.tip_popisa})</a>`;
-                            listContainer.appendChild(li);
-                        });
-                        seeAllLists.classList.remove("hidden");
+                        listContainer.innerHTML = "<p>No lists available.</p>";
                     }
                 } catch (error) {
-                    console.error("Error fetching lists:", error);
+                    console.error("[ERROR FETCHING LISTS]", error);
+                    listContainer.innerHTML = "<p>Error loading lists.</p>";
                 }
             }
-    
+
+
+            function generateListHTML(listArray, type) {
+                return `
+                    <div class="list-category">
+                        ${listArray.map(list => `
+                            <div class="list-card">
+                                <h4><a href="/popisi/${list.id}">${list.naziv}</a></h4>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            function generateFavoritesHTML(favorites) {
+                return `
+                    <div class="list-category">
+                        <div class="list-card favorites">
+                            <h4><a href="/popisi/favorites">View Favorites</a></h4>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function generateWatchedHTML(watched) {
+                return `
+                    <div class="list-category">
+                        <div class="list-card watched">
+                            <h4><a href="/popisi/watched">View Watched</a></h4>
+                        </div>
+                    </div>
+                `;
+            }
+
+
             fetchLists();
     
             async function fetchReviews() {
@@ -217,9 +257,5 @@
         });
     </script>
     
-    
-    
-
-    <%- include('partials/footer') %>
 </body>
 </html>

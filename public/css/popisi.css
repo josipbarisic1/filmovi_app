@@ -73,3 +73,12 @@ button.delete-list:hover {
     background-color: darkred;
 }
 
+.empty{
+    padding: 50px 0;
+    font-size: 1.3rem;
+    color: red;
+    font-weight: bold;
+    width: 100%;
+    text-align: center;
+
+}

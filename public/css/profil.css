@@ -107,10 +107,31 @@
     transition: 0.3s;
 }
 
-.list-card a {
-    color: #ffcc00;
+.review-card a, .list-card a {
+    color: #236cf1;
     text-decoration: none;
 }
+
+.watched{
+    border-left: 4px solid rgb(0, 155, 0);
+    border-top: 4px solid rgb(0, 155, 0);
+    border-bottom: 4px solid rgb(0, 155, 0);
+}
+
+.watched a{
+    color: rgb(0, 155, 0);
+}
+
+.favorites{
+    border-left: 4px solid #ff2f2f;
+    border-top: 4px solid #ff2f2f;
+    border-bottom: 4px solid #ff2f2f;
+}
+
+.favorites a{
+    color: #ff2f2f;
+}
+
 
 .list-card a:hover {
     text-decoration: underline;
@@ -130,10 +151,6 @@
     color: #49bd00;
 }
 
-.review-card a, .list-card a {
-    color: #236cf1;
-    text-decoration: none;
-}
 
 .review-card a:hover, .list-card a:hover {
     text-decoration: underline;

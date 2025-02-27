@@ -279,21 +279,36 @@ async function getEpisodeDetails(serijaId, sezonaId, epizodaId) {
     }
 }
 
+
 app.get('/', async (req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
 
     try {
-        const [popularMovies, trending, popularTVShows] = await Promise.all([
-            axios.get(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}`),
-            axios.get(`https://api.themoviedb.org/3/trending/all/week?api_key=${apiKey}`),
-            axios.get(`https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}`)
+        const [popularMoviesRes, popularTVShowsRes, trendingRes] = await Promise.all([
+            axios.get(`https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&sort_by=popularity.desc&vote_count.gte=500`),
+            axios.get(`https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&sort_by=popularity.desc&vote_count.gte=500`),
+            axios.get(`https://api.themoviedb.org/3/trending/all/week?api_key=${apiKey}`)
         ]);
 
-        res.render('pocetna', {
-            popularMovies: popularMovies.data.results.slice(0, 6),
-            trending: trending.data.results.slice(0, 6),
-            popularTVShows: popularTVShows.data.results.slice(0, 6)
-        });
+        const MIN_VOTE_COUNT = 500;
+        const excludedGenres = [10767, 10763, 99]; 
+
+        const popularMovies = popularMoviesRes.data.results
+            .filter(movie => movie.vote_count >= MIN_VOTE_COUNT && movie.title)
+            .slice(0, 10);
+
+        const popularTVShows = popularTVShowsRes.data.results
+            .filter(show => 
+                show.vote_count >= MIN_VOTE_COUNT &&
+                Array.isArray(show.genre_ids) && 
+                !show.genre_ids.some(genre => excludedGenres.includes(genre)) &&
+                show.name 
+            )
+            .slice(0, 10);
+
+        const trending = trendingRes.data.results.slice(0, 10);
+
+        res.render('pocetna', { popularMovies, trending, popularTVShows });
     } catch (error) {
         console.error("Error fetching movies and TV shows:", error);
         res.render('pocetna', { popularMovies: [], trending: [], popularTVShows: [] });
@@ -499,6 +514,7 @@ app.get('/logout', (req, res) => {
     });
 });
 
+/*
 app.get('/profil', (req, res) => {
     const korisnikId = req.session.userId;
 
@@ -539,6 +555,41 @@ app.get('/profil', (req, res) => {
         });
     });
 });
+*/
+
+app.get('/profil', (req, res) => {
+    const korisnikId = req.session.userId;
+
+    if (!korisnikId) {
+        return res.redirect('/login');
+    }
+
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+
+    connection.connect();
+
+    const userQuery = `SELECT username, email_address, age, phone_number, gender, nadimak FROM korisnici WHERE id = ?`;
+
+    connection.query(userQuery, [korisnikId], (error, userResults) => {
+        if (error || userResults.length === 0) {
+            connection.end();
+            console.error('Error fetching user profile:', error);
+            return res.status(500).send('Error loading profile.');
+        }
+
+        res.render('profil', {
+            korisnik: userResults[0]
+        });
+
+        connection.end();
+    });
+});
+
 
 
 app.get('/profile/edit', (req, res) => {
@@ -642,17 +693,42 @@ app.get('/profile/lists', (req, res) => {
 
     connection.connect();
 
-    const query = `SELECT id, naziv, tip_popisa FROM popisi WHERE korisnik_id = ?`;
+    const listsQuery = `SELECT id, naziv, tip_popisa FROM popisi WHERE korisnik_id = ?`;
+    const favoritesQuery = `SELECT sadrzaj_id, tip FROM favoriti WHERE korisnik_id = ?`;
+    const watchedQuery = `SELECT sadrzaj_id, tip FROM pogledano WHERE korisnik_id = ?`;
 
-    connection.query(query, [korisnikId], (error, results) => {
+    Promise.all([
+        new Promise((resolve, reject) => {
+            connection.query(listsQuery, [korisnikId], (err, results) => {
+                if (err) reject(err);
+                else resolve(results);
+            });
+        }),
+        new Promise((resolve, reject) => {
+            connection.query(favoritesQuery, [korisnikId], (err, results) => {
+                if (err) reject(err);
+                else resolve(results);
+            });
+        }),
+        new Promise((resolve, reject) => {
+            connection.query(watchedQuery, [korisnikId], (err, results) => {
+                if (err) reject(err);
+                else resolve(results);
+            });
+        })
+    ])
+    .then(([lists, favorites, watched]) => {
         connection.end();
-        if (error) {
-            console.error("Error fetching lists:", error);
-            return res.status(500).json({ error: "Error fetching lists." });
-        }
-        res.json(results);
+        res.json({ lists, favorites, watched });
+    })
+    .catch(error => {
+        connection.end();
+        console.error("[ERROR FETCHING LISTS]", error);
+        res.status(500).json({ error: "Error fetching lists." });
     });
 });
+
+
 
 app.get('/profile/reviews', (req, res) => {
     const korisnikId = req.session.userId;
@@ -910,7 +986,6 @@ const updateRenderParams = async (url, title, category, req, res) => {
     if (runtimeMin && runtimeMax) filterUrl += `&with_runtime.gte=${runtimeMin}&with_runtime.lte=${runtimeMax}`;
 
     try {
-        console.log(`Fetching TMDB API: ${filterUrl}`);
         const response = await axios.get(filterUrl);
         const data = response.data;
         const totalPages = data.total_pages;
