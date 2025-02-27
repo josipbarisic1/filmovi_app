@@ -39,6 +39,9 @@
                 <div class="chat-input">
                     <input type="text" id="ai-input" placeholder="Ask AI for recommendations...">
                     <button id="send-ai">Send</button>
+                    <label style="display: none; visibility: hidden; width: 0px; height: 0px;">
+                        <input type="checkbox" id="exclude-watched"> Exclude Watched
+                    </label>
                 </div>
             <% } else { %>
                 <p class="login-message">Login to chat with AI</p>
@@ -76,6 +79,8 @@
 
                 aiInput.value = "";
 
+                const excludeWatched = document.getElementById("exclude-watched").checked;
+
                 try {
                     const response = await fetch("/ai-recommend", {
                         method: "POST",
@@ -83,7 +88,7 @@
                             "Content-Type": "application/json",
                             "CSRF-Token": "<%= csrfToken %>"
                         },
-                        body: JSON.stringify({ userMessage })
+                        body: JSON.stringify({ userMessage, excludeWatched })
                     });
 
                     const data = await response.json();
@@ -109,7 +114,7 @@
         if (link && sender === "ai") {
             messageItem.innerHTML = `<span class="typing-text"></span> <br><a href="${link}" class="ai-link" target="_blank">🔗 Click Here</a>`;
         } else {
-            messageItem.textContent = text;
+            messageItem.innerHTML = `<span class="typing-text">${text}</span>`;
         }
 
         chatMessages.appendChild(messageItem);

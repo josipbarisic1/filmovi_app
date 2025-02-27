@@ -39,27 +39,13 @@ app.use(session({
     secret: 'process.env.SESSION_SECRET',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false }, // HTTPS - true
+    cookie: { secure: false },
 }));
 app.use((req, res, next) => {
     res.locals.session = req.session || {};
     res.locals.currentUrl = req.originalUrl;
     next();
 });
-
-/*
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            imgSrc: ["'self'", "https://image.tmdb.org", "https://www.themoviedb.org", "https://assets.tmdb.org"],
-            mediaSrc: ["'self'", "https://www.youtube.com", "https://i.ytimg.com"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://www.youtube.com", "https://www.gstatic.com"],
-            frameSrc: ["'self'", "https://www.youtube.com"],
-            connectSrc: ["'self'", "https://api.themoviedb.org"]
-        }
-    }
-})); */
 
 app.use(csurf());
 
@@ -125,12 +111,44 @@ app.get('/ai-info', (req, res) => {
 
 const aiRequests = {};
 
-app.post('/ai-recommend', requireLogin, async (req, res) => {    const { userMessage } = req.body;
+async function getSimilarMovies(movieId) {
+    const apiKey = process.env.TMDB_API_KEY;
+    const similarUrl = `https://api.themoviedb.org/3/movie/${movieId}/similar?api_key=${apiKey}&language=en-US`;
+
+    try {
+        const response = await axios.get(similarUrl);
+        return response.data.results || [];
+    } catch (error) {
+        return [];
+    }
+}
+
+app.post('/ai-recommend', requireLogin, async (req, res) => {    
+    const { userMessage, excludeWatched } = req.body;
     const userId = req.session.userId;
     const userRole = req.session.role || "user"; 
 
+    const mysql = require('mysql');
+    const connection = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
+    
+    const watchedMovies = await new Promise((resolve, reject) => {
+        connection.query(
+            "SELECT sadrzaj_id FROM pogledano WHERE korisnik_id = ?", 
+            [userId], 
+            (err, results) => {
+                if (err) reject(err);
+                else resolve(results.map(row => row.sadrzaj_id));
+            }
+        );
+    });
+    
+
     if (!userMessage) {
-        console.log("[ERROR] Empty user message.");
         return res.status(400).json({ error: "Message is required." });
     }
 
@@ -153,12 +171,15 @@ app.post('/ai-recommend', requireLogin, async (req, res) => {    const { userMes
     }
 
     try {
-        const systemMessage = `You are a movie/TV show recommendation AI. Format your response as follows:
-        Title: "<title>"
-        Year: <year>
-        Language: <language>
-        Reason: "<short explanation>".
-        At the end say: "Here's a link to the CONTENT" - instead of 'CONTENT' write 'movie' or 'TV show' accordingly`;
+        const systemMessage = `You are a movie/TV show recommendation AI. Your job is to recommend a movie or TV show based on user input. Always answer in the users language.
+    
+        Always format your response exactly like this:
+        Title: "Inception"
+        Year: 2010
+        Language: English
+        Reason: "A mind-bending thriller with stunning visuals."
+        
+        At the end say: "Here's a link to the movie" OR "Here's a link to the TV show".`;
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",
@@ -171,10 +192,8 @@ app.post('/ai-recommend', requireLogin, async (req, res) => {    const { userMes
         });
 
         const aiResponse = completion.choices[0].message.content;
-        console.log("[AI RESPONSE]:", aiResponse);
 
         if (aiResponse.includes("I only answer movie-related questions")) {
-            console.log("[AI] Invalid query (not movie-related).");
             throw new Error("Invalid query: AI only answers about movies/TV.");
         }
 
@@ -183,15 +202,12 @@ app.post('/ai-recommend', requireLogin, async (req, res) => {    const { userMes
         const languageMatch = aiResponse.match(/Language:\s*([\w-]+)/);
 
         if (!titleMatch || !yearMatch || !languageMatch) {
-            console.log("[ERROR] Could not extract title/year/language from AI response.");
             return res.json({ recommendation: "I'm sorry, but I cannot assist with that.", link: null });
         }
 
         let recommendedTitle = titleMatch[1].trim();
         let recommendedYear = parseInt(yearMatch[1].trim());
         let recommendedLanguage = languageMatch[1].trim();
-
-        console.log("[EXTRACTED DATA] Title:", recommendedTitle, "| Year:", recommendedYear, "| Language:", recommendedLanguage);
 
         recommendedLanguage = "en-US";
 
@@ -200,39 +216,38 @@ app.post('/ai-recommend', requireLogin, async (req, res) => {    const { userMes
         const apiKey = process.env.TMDB_API_KEY;
         const searchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(recommendedTitle)}&language=${recommendedLanguage}`;
 
-        console.log("[TMDB REQUEST] URL:", searchUrl);
-
         const searchResponse = await axios.get(searchUrl);
         const searchResults = searchResponse.data.results;
 
-        console.log("[TMDB RESPONSE] Results:", searchResults.length);
-
         if (!searchResults || searchResults.length === 0) {
-            console.log("[ERROR] No TMDB results found.");
             return res.json({ recommendation: aiResponse, link: null });
         }
 
-        const bestMatch = searchResults
-            .filter(item => {
-                const itemYear = item.release_date ? parseInt(item.release_date.substr(0, 4)) :
-                                 item.first_air_date ? parseInt(item.first_air_date.substr(0, 4)) : null;
-                return itemYear && Math.abs(itemYear - recommendedYear) <= 3;
-            })
-            .sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))[0];
+        let filteredResults = searchResults
+        .filter(item => Math.abs(parseInt(item.release_date?.substr(0, 4)) - recommendedYear) <= 3);
+            
+        let finalResults = excludeWatched
+            ? filteredResults.filter(item => !watchedMovies.includes(parseInt(item.id)))
+            : filteredResults;
+        
+        if (finalResults.length === 0) {
+            finalResults = filteredResults;
+        }
+        
+        const bestMatch = finalResults.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))[0];
+    
+    
 
         if (!bestMatch) {
-            console.log("[ERROR] No matching movie/TV show found for extracted year.");
             return res.json({ recommendation: "Something went wrong, please try again.", link: null });
         }
             
 
-        console.log("[MATCH FOUND] ID:", bestMatch.id, "| Media Type:", bestMatch.media_type);
 
         const mediaType = bestMatch.media_type === 'movie' ? 'film' : 'serija';
         const mediaId = bestMatch.id;
         const mediaLink = `/${mediaType}/${mediaId}`;
 
-        console.log("[FINAL LINK] Generated link:", mediaLink);
 
         res.json({ recommendation: aiResponse, link: mediaLink });
     } catch (error) {
@@ -514,50 +529,7 @@ app.get('/logout', (req, res) => {
     });
 });
 
-/*
-app.get('/profil', (req, res) => {
-    const korisnikId = req.session.userId;
-
-    if (!korisnikId) {
-        return res.redirect('/login');
-    }
-
-    const connection = mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-    });
-
-    connection.connect();
-
-    const userQuery = `SELECT username, email_address, age, phone_number, gender, nadimak FROM korisnici WHERE id = ?`;
-    const listsQuery = `SELECT id, naziv, tip_popisa FROM popisi WHERE korisnik_id = ?`;
-
-    connection.query(userQuery, [korisnikId], (error, userResults) => {
-        if (error || userResults.length === 0) {
-            connection.end();
-            console.error('Error fetching user profile:', error);
-            return res.status(500).send('Error loading profile.');
-        }
-
-        connection.query(listsQuery, [korisnikId], (listError, listResults) => {
-            connection.end();
-            if (listError) {
-                console.error('Error fetching user lists:', listError);
-                return res.status(500).send('Error loading user lists.');
-            }
-
-            res.render('profil', {
-                korisnik: userResults[0],
-                lists: listResults
-            });
-        });
-    });
-});
-*/
-
-app.get('/profil', (req, res) => {
+app.get('/profil', requireLogin, (req, res) => {
     const korisnikId = req.session.userId;
 
     if (!korisnikId) {
@@ -592,7 +564,7 @@ app.get('/profil', (req, res) => {
 
 
 
-app.get('/profile/edit', (req, res) => {
+app.get('/profile/edit', requireLogin, (req, res) => {
     const korisnikId = req.session.userId;
 
     if (!korisnikId) {
@@ -626,7 +598,7 @@ app.get('/profile/edit', (req, res) => {
     });
 });
 
-app.post('/profile/update', (req, res) => {
+app.post('/profile/update', requireLogin, (req, res) => {
     const { username, email_address, age, phone_number, gender, nadimak } = req.body;
     const korisnikId = req.session.userId;
 
@@ -677,7 +649,7 @@ app.post('/profile/update', (req, res) => {
 });
 
 
-app.get('/profile/lists', (req, res) => {
+app.get('/profile/lists', requireLogin, (req, res) => {
     const korisnikId = req.session.userId;
 
     if (!korisnikId) {
@@ -730,7 +702,7 @@ app.get('/profile/lists', (req, res) => {
 
 
 
-app.get('/profile/reviews', (req, res) => {
+app.get('/profile/reviews', requireLogin, (req, res) => {
     const korisnikId = req.session.userId;
 
     if (!korisnikId) {
@@ -882,88 +854,6 @@ function generatePagination(currentPage, totalPages) {
     return pages;
 }
 
-
-const generateUrl = (base, sort) => {
-    let sortBy = '';
-    switch (sort) {
-        case 'alphabetical':
-            sortBy = 'original_title.asc';
-            break;
-        case 'latest':
-            sortBy = 'release_date.desc';
-            break;
-        case 'most-viewed':
-            sortBy = 'popularity.desc';
-            break;
-        case 'top-rated':
-            sortBy = 'vote_average.desc';
-            break;
-        default:
-            sortBy = 'original_title.asc';
-    }
-    return `${base}&sort_by=${sortBy}`;
-};
-
-/* 
-const generatePagination = (currentPage, totalPages) => {
-    const delta = 2;
-    const range = [];
-    const rangeWithDots = [];
-    let l;
-
-    for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
-            range.push(i);
-        }
-    }
-
-    for (let i of range) {
-        if (l) {
-            if (i - l === 2) {
-                rangeWithDots.push(l + 1);
-            } else if (i - l !== 1) {
-                rangeWithDots.push('...');
-            }
-        }
-        rangeWithDots.push(i);
-        l = i;
-    }
-    return rangeWithDots;
-}; */
-
-/*
-const updateRenderParams = async (url, title, category, req, res) => {
-    const apiKey = process.env.TMDB_API_KEY;
-    const page = parseInt(req.query.page) || 1;
-
-    try {
-        const response = await axios.get(`${url}&page=${page}`);
-        const data = response.data;
-        const totalPages = data.total_pages;
-
-        const filteredResults = data.results.filter(item => {
-            const releaseDate = item.release_date || item.first_air_date;
-            return releaseDate && new Date(releaseDate) <= new Date();
-        });
-
-        data.results = filteredResults;
-
-        res.render('top_lista', {
-            title,
-            data,
-            category,
-            page,
-            totalPages,
-            loadMore: page < totalPages,
-            nextPage: page + 1
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
-    }
-};
-*/
-
 const updateRenderParams = async (url, title, category, req, res) => {
     const apiKey = process.env.TMDB_API_KEY;
     const page = parseInt(req.query.page) || 1;
@@ -1015,9 +905,6 @@ const updateRenderParams = async (url, title, category, req, res) => {
     }
 };
 
-
-
-
 const formatDate = (date) => date.toISOString().split('T')[0];
 
 app.get('/:category/latest', async (req, res) => {
@@ -1060,7 +947,7 @@ app.get('/:category/most-viewed', async (req, res) => {
     const language = req.query.language || '';
     const runtimeMin = req.query.runtimeMin || '';
     const runtimeMax = req.query.runtimeMax || '';
-    const minVotes = 100;
+    const minVotes = 750;
 
     let url = `https://api.themoviedb.org/3/discover/${category}?api_key=${apiKey}&page=${page}&sort_by=popularity.desc&vote_count.gte=${minVotes}`;
 
@@ -1098,126 +985,6 @@ app.get('/:category/alphabetical', async (req, res) => {
     await updateRenderParams(url, `Alphabetical ${category === 'movie' ? 'Movies' : 'TV Shows'}`, category, req, res);
 });
 
-
-
-
-
-/* 
-app.get('/:category/latest', async (req, res) => {
-    const category = req.params.category;
-    const apiKey = process.env.TMDB_API_KEY;
-    const page = parseInt(req.query.page) || 1;
-
-    let url;
-    if (category === 'movie') {
-        url = `https://api.themoviedb.org/3/movie/now_playing?api_key=${apiKey}&page=${page}`;
-    } else if (category === 'tv') {
-        url = `https://api.themoviedb.org/3/tv/airing_today?api_key=${apiKey}&page=${page}`;
-    } else {
-        return res.status(400).send('Nevažeća kategorija.');
-    }
-
-    await updateRenderParams(url, category, 'latest', req, res);
-});
-
-app.get('/movie/alphabetical', async (req, res) => {
-    const apiKey = process.env.TMDB_API_KEY;
-    const url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&sort_by=original_title.asc`;
-    await updateRenderParams(url, 'movie', 'alphabetical', req, res);
-});
-
-
-app.get('/movie/most-viewed', async (req, res) => {
-    const apiKey = process.env.TMDB_API_KEY;
-    const url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&sort_by=popularity.desc`;
-    await updateRenderParams(url, 'movie', 'most_viewed', req, res);
-});
-
-app.get('/movie/top-rated', async (req, res) => {
-    const apiKey = process.env.TMDB_API_KEY;
-    const url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&sort_by=vote_average.desc`;
-    await updateRenderParams(url, 'movie', 'top_rated', req, res);
-});
-
-app.get('/tv/alphabetical', async (req, res) => {
-    const apiKey = process.env.TMDB_API_KEY;
-    const url = `https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&sort_by=original_name.asc`;
-    await updateRenderParams(url, 'tv', 'alphabetical', req, res);
-});
-
-
-app.get('/tv/most-viewed', async (req, res) => {
-    const apiKey = process.env.TMDB_API_KEY;
-    const url = `https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&sort_by=popularity.desc`;
-    await updateRenderParams(url, 'tv', 'most_viewed', req, res);
-});
-
-app.get('/tv/top-rated', async (req, res) => {
-    const apiKey = process.env.TMDB_API_KEY;
-    const url = `https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&sort_by=vote_average.desc`;
-    await updateRenderParams(url, 'tv', 'top_rated', req, res);
-});
-*/
-
-/*
-app.post('/popisi/dodaj', (req, res) => {
-    const { popis_id, sadrzaj_id } = req.body;
-    const korisnikId = req.session.userId;
-
-    if (!korisnikId) {
-        return res.status(401).json({ error: "You must be logged in." });
-    }
-
-    if (!popis_id || !sadrzaj_id) {
-        console.error("Missing data: ", req.body);
-        return res.status(400).json({ error: "Invalid data." });
-    }
-
-    const connection = mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-    });
-
-    connection.connect();
-
-    const checkSql = `SELECT sadrzaj FROM popisi WHERE id = ? AND korisnik_id = ?`;
-    connection.query(checkSql, [popis_id, korisnikId], (err, results) => {
-        if (err) {
-            console.error('Error checking list:', err);
-            connection.end();
-            return res.status(500).json({ error: 'Error checking list.' });
-        }
-
-        if (results.length > 0) {
-            const existingContent = results[0].sadrzaj.split(',');
-            if (existingContent.includes(sadrzaj_id)) {
-                connection.end();
-                return res.status(409).json({ error: 'Content already in list.' });
-            }
-        }
-
-        const sql = `
-            UPDATE popisi 
-            SET sadrzaj = CASE 
-                            WHEN sadrzaj = '' THEN ? 
-                            ELSE CONCAT(sadrzaj, ',', ?) 
-                          END 
-            WHERE id = ? AND korisnik_id = ?
-        `;
-
-        connection.query(sql, [sadrzaj_id, sadrzaj_id, popis_id, korisnikId], (err) => {
-            connection.end();
-            if (err) {
-                console.error('Error updating list:', err);
-                return res.status(500).json({ error: 'Error updating list.' });
-            }
-            res.status(200).json({ success: 'Added to list successfully.' });
-        });
-    });
-});
-*/
 
 app.get('/popisi', requireLogin, async (req, res) => {
     const userId = req.session.userId;
@@ -1299,7 +1066,7 @@ function queryDatabase(connection, query, params) {
 
 
 
-app.post('/popisi/kreiraj', async (req, res) => {
+app.post('/popisi/kreiraj', requireLogin, async (req, res) => {
     const { naziv, tip_popisa } = req.body;
     const userId = req.session.userId;
     const username = req.session.username;
@@ -1513,7 +1280,6 @@ app.get('/popisi/:id', requireLogin, async (req, res) => {
         });
     }
 });
-
 
 
 app.post("/popisi/obrisi-stavku", requireLogin, async (req, res) => {
@@ -2230,7 +1996,7 @@ app.get('/serija/:serijaId/sezona/:sezonaId/epizoda/:epizodaId/cast', async (req
     }
 });
 
-app.get('/komentar/:tip/:id', async (req, res) => {
+app.get('/komentar/:tip/:id', requireLogin, async (req, res) => {
     const { tip, id } = req.params;
     const korisnikId = req.session.userId;
 
@@ -2296,7 +2062,7 @@ function containsInvalidCharacters(text) {
     return text !== sanitizeHtml(text, { allowedTags: [], allowedAttributes: {} });
 }
 
-app.post('/dodaj-komentar', (req, res) => {
+app.post('/dodaj-komentar', requireLogin, (req, res) => {
     const { tekst, ocjena, filmId, serijaId } = req.body;
     const korisnikId = req.session.userId;
 
@@ -2341,7 +2107,7 @@ app.post('/dodaj-komentar', (req, res) => {
     });
 });
 
-app.post('/uredi-komentar', (req, res) => {
+app.post('/uredi-komentar', requireLogin, (req, res) => {
     const { tekst, ocjena, filmId, serijaId } = req.body;
     const korisnikId = req.session.userId;
 
@@ -2387,12 +2153,9 @@ app.post('/uredi-komentar', (req, res) => {
     });
 });
 
-app.post('/izbrisi-komentar', (req, res) => {
+app.post('/izbrisi-komentar', requireLogin, (req, res) => {
     const { filmId, serijaId } = req.body;
     const korisnikId = req.session.userId;
-
-    console.log('Deleting comment:', { filmId, serijaId, korisnikId });
-
 
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
@@ -2418,8 +2181,6 @@ app.post('/izbrisi-komentar', (req, res) => {
 });
 
 app.get('/komentari/:tip/:id', (req, res) => {
-    console.log(`Fetching comments for ${req.params.tip} with ID ${req.params.id}`);
-
     const { tip, id } = req.params;
     const column = tip === 'film' ? 'film_id' : 'serija_id';
 
@@ -2449,7 +2210,6 @@ app.get('/komentari/:tip/:id', (req, res) => {
             console.error('Error fetching comments:', error);
             return res.status(500).send('Error fetching comments.');
         }
-        console.log('Fetched comments:', results);
         res.json(results);
     });
 

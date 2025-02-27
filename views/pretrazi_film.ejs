@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="hr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rezultati pretraživanja</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/pretrazi_film.css">
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+
 </head>
 <body>
     <%- include('partials/header') %>
@@ -23,29 +25,29 @@
                     <li>Filtriraj pretragu:</li>
                     <li>
                         <select name="genre">
-                            <option value="">Žanr</option>
+                            <option value="">Genre</option>
                             <% genres.forEach(genre => { %>
                                 <option value="<%= genre.id %>" <%= genre.id == selectedGenre ? 'selected' : '' %>><%= genre.name %></option>
                             <% }) %>
                         </select>
                     </li>
                     <li>
-                        <label>Od datuma:</label>
+                        <label>From:</label>
                         <input type="date" name="startDate" value="<%= startDate || '' %>">
-                        <label>Do datuma:</label>
+                        <label>Till:</label>
                         <input type="date" name="endDate" value="<%= endDate || '' %>">
                     </li>
                     <li>
                         <select name="language">
-                            <option value="">Jezik</option>
-                            <option value="en" <%= language === 'en' ? 'selected' : '' %>>Engleski</option>
-                            <option value="hr" <%= language === 'hr' ? 'selected' : '' %>>Hrvatski</option>
-                            <option value="de" <%= language === 'de' ? 'selected' : '' %>>Njemački</option>
-                            <option value="fr" <%= language === 'fr' ? 'selected' : '' %>>Francuski</option>
+                            <option value="">Language</option>
+                            <option value="en" <%= language === 'en' ? 'selected' : '' %>>English</option>
+                            <option value="hr" <%= language === 'hr' ? 'selected' : '' %>>Croatian</option>
+                            <option value="de" <%= language === 'de' ? 'selected' : '' %>>German</option>
+                            <option value="fr" <%= language === 'fr' ? 'selected' : '' %>>French</option>
                         </select>
                     </li>
                     <li>
-                        <button type="submit">Primijeni filtre</button>
+                        <button type="submit">Apply</button>
                     </li>
                 </ul>
             </form>
