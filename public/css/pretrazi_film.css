@@ -90,66 +90,6 @@ header ul li a:hover {
 
 
 
-.filter-section {
-    background: #1e1e1e;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 10px rgba(255, 255, 255, 0.1);
-}
-
-.filter-section form {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-.filter-section ul {
-    list-style: none;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.filter-section li {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 14px;
-    color: white;
-}
-
-.filter-section select,
-.filter-section input {
-    padding: 8px;
-    border: none;
-    border-radius: 5px;
-    font-size: 14px;
-    background: white;
-    color: black;
-}
-
-.filter-section button {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    font-size: 14px;
-    background: #ff6600;
-    color: white;
-    cursor: pointer;
-    transition: background 0.3s ease;
-}
-
-.filter-section button:hover {
-    background: #ff4500;
-}
-
-
-
-
 .card-content-main{
     flex: 1;
     align-items: center;
@@ -312,6 +252,7 @@ header ul li a:hover {
 
 .top-list-h1{
     padding: 10px 0 0 30px;   
+    text-align: left;
 }
 
 @media (max-width: 480px) {

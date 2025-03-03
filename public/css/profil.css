@@ -112,6 +112,10 @@
     text-decoration: none;
 }
 
+.profile-section a{
+    text-decoration: none;
+}
+
 .watched{
     border-left: 4px solid rgb(0, 155, 0);
     border-top: 4px solid rgb(0, 155, 0);

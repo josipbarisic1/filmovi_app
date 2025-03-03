@@ -39,7 +39,7 @@ app.use(session({
     secret: 'process.env.SESSION_SECRET',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false },
+    cookie: { secure: false, maxAge: 86400000 },
 }));
 app.use((req, res, next) => {
     res.locals.session = req.session || {};
@@ -179,7 +179,7 @@ app.post('/ai-recommend', requireLogin, async (req, res) => {
         Language: English
         Reason: "A mind-bending thriller with stunning visuals."
         
-        At the end say: "Here's a link to the movie" OR "Here's a link to the TV show".`;
+        At the end say: "Here's a link to the movie" OR "Here's a link to the TV show" in the users language.`;
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",
@@ -187,7 +187,7 @@ app.post('/ai-recommend', requireLogin, async (req, res) => {
                 { role: "system", content: systemMessage },
                 { role: "user", content: userMessage }
             ],
-            max_tokens: 120,
+            max_tokens: 500,
             temperature: 0.7
         });
 

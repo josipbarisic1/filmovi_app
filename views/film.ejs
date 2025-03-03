@@ -255,7 +255,7 @@
                     } else {
                         popisi.forEach(popis => {
                             const listItem = document.createElement('div');
-                            listItem.className = 'dropdown-option';
+                            listItem.className = 'dropdown-option lista';
                             listItem.innerText = popis.naziv;
                             listItem.onclick = () => addToList(popis.id, 'film');
                             listOptions.appendChild(listItem);

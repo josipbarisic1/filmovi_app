@@ -6,6 +6,7 @@
     <title><%= title %></title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/pretrazi_film.css">
+    <link rel="stylesheet" href="/css/filter.css">
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
 
 </head>
@@ -13,13 +14,10 @@
     <%- include('partials/header') %>
 
     <main class="card-content-main">
-        <h1 class="top-list-h1"><%= title %></h1>
-
         <% if (data && data.results.length > 0) { %>
-            <div class="filter">
+            <section class="filter-section">
                 <form action="" method="get">
                     <ul>
-                        <li>Filter Results:</li>
                         <li>
                             <select name="genre">
                                 <option value="">Genre</option>
@@ -29,9 +27,9 @@
                             </select>
                         </li>
                         <li>
-                            <label>From Date:</label>
+                            <label>From:</label>
                             <input type="date" name="startDate" value="<%= startDate || '' %>">
-                            <label>To Date:</label>
+                            <label>Till:</label>
                             <input type="date" name="endDate" value="<%= endDate || '' %>">
                         </li>                        
                         <li>
@@ -43,7 +41,7 @@
                                 <option value="fr" <%= language === 'fr' ? 'selected' : '' %>>French</option>
                             </select>
                         </li>
-                        <li>
+                        <li style="display: none;">
                             <label>Runtime (min):</label>
                             <input type="range" min="0" max="400" value="<%= runtimeMin || 0 %>" name="runtimeMin" id="runtimeMinSlider">
                             <span id="runtimeMinValue"><%= runtimeMin || 0 %></span>
@@ -55,7 +53,9 @@
                         </li>
                     </ul>
                 </form>             
-            </div>
+            </section>
+
+            <h1 class="top-list-h1"><%= title %></h1>
 
             <div class="movie-grid">
                 <% data.results.forEach(item => { %>
@@ -105,49 +105,49 @@
 
     <script>
         document.getElementById("load-more")?.addEventListener("click", async function() {
-    const nextPage = this.getAttribute("data-next");
-    const genre = this.getAttribute("data-genre");
-    const startDate = this.getAttribute("data-start-date");
-    const endDate = this.getAttribute("data-end-date");
-    const language = this.getAttribute("data-language");
-    const runtimeMin = this.getAttribute("data-runtime-min");
-    const runtimeMax = this.getAttribute("data-runtime-max");
+            const nextPage = this.getAttribute("data-next");
+            const genre = this.getAttribute("data-genre");
+            const startDate = this.getAttribute("data-start-date");
+            const endDate = this.getAttribute("data-end-date");
+            const language = this.getAttribute("data-language");
+            const runtimeMin = this.getAttribute("data-runtime-min");
+            const runtimeMax = this.getAttribute("data-runtime-max");
 
-    let url = `${window.location.pathname}?page=${nextPage}`;
+            let url = `${window.location.pathname}?page=${nextPage}`;
 
-    if (genre) url += `&genre=${genre}`;
-    if (startDate && endDate) url += `&startDate=${startDate}&endDate=${endDate}`;
-    if (language) url += `&language=${language}`;
-    if (runtimeMin && runtimeMax) url += `&runtimeMin=${runtimeMin}&runtimeMax=${runtimeMax}`;
+            if (genre) url += `&genre=${genre}`;
+            if (startDate && endDate) url += `&startDate=${startDate}&endDate=${endDate}`;
+            if (language) url += `&language=${language}`;
+            if (runtimeMin && runtimeMax) url += `&runtimeMin=${runtimeMin}&runtimeMax=${runtimeMax}`;
 
-    fetch(url)
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, "text/html");
-            const newMovies = doc.querySelector(".movie-grid")?.innerHTML;
-            if (newMovies) {
-                document.querySelector(".movie-grid").innerHTML += newMovies;
-            }
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, "text/html");
+                    const newMovies = doc.querySelector(".movie-grid")?.innerHTML;
+                    if (newMovies) {
+                        document.querySelector(".movie-grid").innerHTML += newMovies;
+                    }
 
-            const newLoadMore = doc.querySelector("#load-more");
-            if (newLoadMore) {
-                this.setAttribute("data-next", newLoadMore.getAttribute("data-next"));
-                this.setAttribute("data-genre", newLoadMore.getAttribute("data-genre"));
-                this.setAttribute("data-start-date", newLoadMore.getAttribute("data-start-date"));
-                this.setAttribute("data-end-date", newLoadMore.getAttribute("data-end-date"));
-                this.setAttribute("data-language", newLoadMore.getAttribute("data-language"));
-                this.setAttribute("data-runtime-min", newLoadMore.getAttribute("data-runtime-min"));
-                this.setAttribute("data-runtime-max", newLoadMore.getAttribute("data-runtime-max"));
-            } else {
-                this.remove();
-            }
-        })
-        .catch(error => console.error("Load More Error:", error))
-        .then(() => {
-            applyTruncation();
+                    const newLoadMore = doc.querySelector("#load-more");
+                    if (newLoadMore) {
+                        this.setAttribute("data-next", newLoadMore.getAttribute("data-next"));
+                        this.setAttribute("data-genre", newLoadMore.getAttribute("data-genre"));
+                        this.setAttribute("data-start-date", newLoadMore.getAttribute("data-start-date"));
+                        this.setAttribute("data-end-date", newLoadMore.getAttribute("data-end-date"));
+                        this.setAttribute("data-language", newLoadMore.getAttribute("data-language"));
+                        this.setAttribute("data-runtime-min", newLoadMore.getAttribute("data-runtime-min"));
+                        this.setAttribute("data-runtime-max", newLoadMore.getAttribute("data-runtime-max"));
+                    } else {
+                        this.remove();
+                    }
+                })
+                .catch(error => console.error("Load More Error:", error))
+                .then(() => {
+                    applyTruncation();
+                });
         });
-});
 
 
 

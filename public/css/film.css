@@ -164,7 +164,11 @@ body {
 }
 
 .dropdown-option:hover {
-    background: #f0f0f0;
+    background: white;
+}
+
+.lista:hover{
+    background-color: rgb(131, 153, 131);
 }
 
 .list-options {

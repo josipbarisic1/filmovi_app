@@ -25,8 +25,8 @@
                             <img src="/img/no-image.png" alt="No Image Available">
                         <% } %>
                     </a>
-                    <p><%= item.naziv %></p>
-                    <form action="/popisi/obrisi-stavku" method="POST">
+                    <p class="elipsis"><%= item.naziv %></p>
+                    <form class="forma-delete" action="/popisi/obrisi-stavku" method="POST">
                         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                         <input type="hidden" name="popis_id" value="<%= popis.id %>">
                         <input type="hidden" name="sadrzaj_id" value="<%= item.id %>">
