@@ -171,7 +171,7 @@ app.post('/ai-recommend', requireLogin, async (req, res) => {
     }
 
     try {
-        const systemMessage = `You are a movie/TV show recommendation AI. Your job is to recommend a movie or TV show based on user input. Always answer in the users language.
+        const systemMessage = `You are a movie/TV show recommendation AI. Your job is to recommend a movie or TV show based on user input. Always answer in the language of userMessage.
     
         Always format your response exactly like this:
         Title: "Inception"
@@ -755,47 +755,69 @@ app.get('/pretrazi', async (req, res) => {
     const startDate = req.query.startDate || null;
     const endDate = req.query.endDate || null;
     const language = req.query.language || '';
+    const pageSize = 20;
+    const maxPagesToFetch = 50;
+    const excludeGenres = category === 'tv' ? '10767,10763' : '';
 
     try {
-        let allResults = [];
-        const pageSize = 20;
-        const maxPagesToFetch = 10;
-        const excludeGenres = category === 'tv' ? '10767,10763' : '';
-
         const genreResponse = await axios.get(`https://api.themoviedb.org/3/genre/${category}/list?api_key=${apiKey}`);
         const availableGenres = genreResponse.data.genres.map(g => g.id.toString());
+        if (genre && !availableGenres.includes(genre)) genre = '';
 
-        if (genre && !availableGenres.includes(genre)) {
-            genre = '';
-        }
+        let allResults = [];
 
         if (naziv) {
-            for (let i = 1; i <= maxPagesToFetch; i++) {
-                const searchUrl = `https://api.themoviedb.org/3/search/${category}?api_key=${apiKey}&query=${encodeURIComponent(naziv)}&page=${i}`;
-                const searchResponse = await axios.get(searchUrl);
-                allResults = allResults.concat(searchResponse.data.results);
-                if (i >= searchResponse.data.total_pages) break;
+            const firstUrl = `https://api.themoviedb.org/3/search/${category}?api_key=${apiKey}&query=${encodeURIComponent(naziv)}&page=1`;
+            const firstResponse = await axios.get(firstUrl);
+            allResults = allResults.concat(firstResponse.data.results);
+            const totalPages = Math.min(maxPagesToFetch, firstResponse.data.total_pages);
+            
+            const promises = [];
+            for (let i = 2; i <= totalPages; i++) {
+                const url = `https://api.themoviedb.org/3/search/${category}?api_key=${apiKey}&query=${encodeURIComponent(naziv)}&page=${i}`;
+                promises.push(axios.get(url));
             }
+            const responses = await Promise.all(promises);
+            responses.forEach(response => {
+                allResults = allResults.concat(response.data.results);
+            });
         } else {
-            for (let i = 1; i <= maxPagesToFetch; i++) {
-                let discoverUrl = `https://api.themoviedb.org/3/discover/${category}?api_key=${apiKey}&page=${i}`;
-                if (genre) discoverUrl += `&with_genres=${genre}`;
-                if (excludeGenres) discoverUrl += `&without_genres=${excludeGenres}`;
+            const firstUrl = `https://api.themoviedb.org/3/discover/${category}?api_key=${apiKey}&page=1`;
+            let discoverUrl = firstUrl;
+            if (genre) discoverUrl += `&with_genres=${genre}`;
+            if (excludeGenres) discoverUrl += `&without_genres=${excludeGenres}`;
+            if (startDate && endDate) {
+                discoverUrl += category === 'movie'
+                    ? `&primary_release_date.gte=${startDate}&primary_release_date.lte=${endDate}`
+                    : `&first_air_date.gte=${startDate}&first_air_date.lte=${endDate}`;
+            }
+            if (language) discoverUrl += `&with_original_language=${language}`;
+            
+            const firstResponse = await axios.get(discoverUrl);
+            allResults = allResults.concat(firstResponse.data.results);
+            const totalPages = Math.min(maxPagesToFetch, firstResponse.data.total_pages);
+            
+            const promises = [];
+            for (let i = 2; i <= totalPages; i++) {
+                let url = `https://api.themoviedb.org/3/discover/${category}?api_key=${apiKey}&page=${i}`;
+                if (genre) url += `&with_genres=${genre}`;
+                if (excludeGenres) url += `&without_genres=${excludeGenres}`;
                 if (startDate && endDate) {
-                    discoverUrl += category === 'movie'
+                    url += category === 'movie'
                         ? `&primary_release_date.gte=${startDate}&primary_release_date.lte=${endDate}`
                         : `&first_air_date.gte=${startDate}&first_air_date.lte=${endDate}`;
                 }
-                if (language) discoverUrl += `&with_original_language=${language}`;
-
-                const discoverResponse = await axios.get(discoverUrl);
-                allResults = allResults.concat(discoverResponse.data.results);
-                if (i >= discoverResponse.data.total_pages) break;
+                if (language) url += `&with_original_language=${language}`;
+                promises.push(axios.get(url));
             }
+            const responses = await Promise.all(promises);
+            responses.forEach(response => {
+                allResults = allResults.concat(response.data.results);
+            });
         }
 
         allResults = allResults.filter(item => {
-            const matchesGenre = genre ? item.genre_ids.includes(parseInt(genre)) : true;
+            const matchesGenre = genre ? (Array.isArray(item.genre_ids) && item.genre_ids.includes(parseInt(genre))) : true;
             const releaseDate = item.release_date || item.first_air_date || '';
             const matchesDate = (startDate && endDate && releaseDate)
                 ? (releaseDate >= startDate && releaseDate <= endDate)
@@ -807,9 +829,7 @@ app.get('/pretrazi', async (req, res) => {
         const totalFilteredResults = allResults.length;
         const totalPages = Math.max(1, Math.ceil(totalFilteredResults / pageSize));
         page = Math.min(page, totalPages);
-
         const results = allResults.slice((page - 1) * pageSize, page * pageSize);
-
         const pagination = generatePagination(page, totalPages);
 
         res.render('pretrazi_film', {
@@ -830,6 +850,7 @@ app.get('/pretrazi', async (req, res) => {
         res.status(500).send('Došlo je do pogreške prilikom dohvaćanja podataka.');
     }
 });
+
 
 
 function generatePagination(currentPage, totalPages) {
